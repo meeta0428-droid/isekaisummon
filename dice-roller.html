@@ -1150,25 +1150,25 @@
         <div class="stat-row" data-stat="hp">
           <div class="stat-icon hp">💪</div>
           <div class="stat-name">体力</div>
-          <input type="number" class="stat-input" id="stat-hp" min="0" max="20" value="0">
+          <input type="number" class="stat-input" id="stat-hp" min="0" max="20" value="3">
           <button class="stat-roll-btn" data-stat-key="hp" disabled>🎲 判定</button>
         </div>
         <div class="stat-row" data-stat="agi">
           <div class="stat-icon agi">⚡</div>
           <div class="stat-name">敏捷力</div>
-          <input type="number" class="stat-input" id="stat-agi" min="0" max="20" value="0">
+          <input type="number" class="stat-input" id="stat-agi" min="0" max="20" value="3">
           <button class="stat-roll-btn" data-stat-key="agi" disabled>🎲 判定</button>
         </div>
         <div class="stat-row" data-stat="int">
           <div class="stat-icon int">📚</div>
           <div class="stat-name">知力</div>
-          <input type="number" class="stat-input" id="stat-int" min="0" max="20" value="0">
+          <input type="number" class="stat-input" id="stat-int" min="0" max="20" value="3">
           <button class="stat-roll-btn" data-stat-key="int" disabled>🎲 判定</button>
         </div>
         <div class="stat-row" data-stat="cha">
           <div class="stat-icon cha">✨</div>
           <div class="stat-name">魅力</div>
-          <input type="number" class="stat-input" id="stat-cha" min="0" max="20" value="0">
+          <input type="number" class="stat-input" id="stat-cha" min="0" max="20" value="3">
           <button class="stat-roll-btn" data-stat-key="cha" disabled>🎲 判定</button>
         </div>
       </div>
@@ -1183,9 +1183,9 @@
         <div class="hp-icon">❤️</div>
         <div class="hp-values">
           <div class="hp-numbers">
-            <span class="hp-current" id="hp-current">10</span>
+            <span class="hp-current" id="hp-current">16</span>
             <span class="hp-separator">/</span>
-            <span class="hp-max" id="hp-max">10</span>
+            <span class="hp-max" id="hp-max">16</span>
           </div>
           <div class="hp-bar-container">
             <div class="hp-bar" id="hp-bar"></div>
@@ -1300,11 +1300,40 @@
   <script>
     // === 状態管理 ===
     let diceCount = 2;
-    let spTotal = 0;
+    let spTotal = 3; // 初期値は知力と同じ（デフォルト3）
     let rollNumber = 0;
     let skillSlots = []; // { id, name, rank, used }
     let slotIdCounter = 0;
     let activeBonus = 0; // 現在適用中のチートボーナス合計
+
+    // === localStorage保存キー ===
+    const SAVE_KEY = 'isekaiTRPG_saveData';
+
+    // セーブ関数
+    function saveToStorage() {
+      const data = {
+        charName: document.getElementById('char-name').value,
+        stats: {
+          hp: parseInt(document.getElementById('stat-hp').value) || 3,
+          agi: parseInt(document.getElementById('stat-agi').value) || 3,
+          int: parseInt(document.getElementById('stat-int').value) || 3,
+          cha: parseInt(document.getElementById('stat-cha').value) || 3,
+        },
+        sp: spTotal,
+        hpCurrent: hpCurrent,
+        hpMax: hpMax,
+        cheatSlots: skillSlots.map(s => ({ name: s.name, rank: s.rank })),
+        rankUseCounts: rankUseCounts,
+      };
+      localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+    }
+
+    // ロード関数（初期化時に呼ばれる）
+    function loadFromStorage() {
+      const raw = localStorage.getItem(SAVE_KEY);
+      if (!raw) return null;
+      try { return JSON.parse(raw); } catch(e) { return null; }
+    }
 
     // ランクごとのSP消費コスト & ボーナス
     const RANK_COSTS = { SSS: 3, SS: 2, S: 1, A: 1, B: 1 };
@@ -1853,6 +1882,107 @@
       elStatResultArea.innerHTML = html;
       elStatResultArea.classList.add('show');
     }
+
+    // === 初期化：localStorageからデータ復元 ===
+    (function initFromStorage() {
+      const saved = loadFromStorage();
+
+      // 判定ボタンの初期有効化（デフォルト値3なので有効にする）
+      document.querySelectorAll('.stat-input').forEach(input => {
+        const key = input.id.replace('stat-', '');
+        const val = parseInt(input.value) || 0;
+        const btn = document.querySelector(`[data-stat-key="${key}"]`);
+        btn.disabled = val <= 0;
+      });
+
+      if (saved) {
+        // キャラクター名
+        if (saved.charName) {
+          document.getElementById('char-name').value = saved.charName;
+        }
+        // 能力値
+        if (saved.stats) {
+          ['hp', 'agi', 'int', 'cha'].forEach(key => {
+            if (saved.stats[key] !== undefined) {
+              const input = document.getElementById(`stat-${key}`);
+              input.value = saved.stats[key];
+              const btn = document.querySelector(`[data-stat-key="${key}"]`);
+              btn.disabled = saved.stats[key] <= 0;
+            }
+          });
+        }
+        // SP
+        if (saved.sp !== undefined) {
+          spTotal = saved.sp;
+          elSpTotal.textContent = spTotal;
+        }
+        // HP
+        if (saved.hpMax !== undefined && saved.hpCurrent !== undefined) {
+          hpMax = saved.hpMax;
+          hpCurrent = saved.hpCurrent;
+          renderHp();
+        } else {
+          // 保存データなし：体力から計算
+          const hpStat = parseInt(document.getElementById('stat-hp').value) || 3;
+          updateHpFromStat(hpStat);
+        }
+        // チートスキルスロット
+        if (saved.cheatSlots && saved.cheatSlots.length > 0) {
+          // 初期スロットは既に追加済みなので削除してから復元
+          const firstSlot = skillSlots[0];
+          if (firstSlot) removeSlot(firstSlot.id);
+          saved.cheatSlots.forEach(cs => {
+            addSlot();
+            const slot = skillSlots[skillSlots.length - 1];
+            const nameInput = document.querySelector(`[data-name-id="${slot.id}"]`);
+            const rankSelect = document.querySelector(`[data-rank-id="${slot.id}"]`);
+            if (nameInput) nameInput.value = cs.name || '';
+            if (rankSelect) rankSelect.value = cs.rank || 'SSS';
+            slot.name = cs.name || '';
+            slot.rank = cs.rank || 'SSS';
+            document.querySelector(`[data-bonus-id="${slot.id}"]`).textContent = `効果: 成功ダイス +${RANK_BONUS[slot.rank]}`;
+            updateSlotCostDisplay(slot.id);
+          });
+          updateAllSlotButtons();
+        }
+        // ランク使用回数
+        if (saved.rankUseCounts) {
+          rankUseCounts = { ...rankUseCounts, ...saved.rankUseCounts };
+        }
+      } else {
+        // 初回：デフォルト値3で初期化
+        const hpStat = parseInt(document.getElementById('stat-hp').value) || 3;
+        updateHpFromStat(hpStat);
+      }
+    })();
+
+    // === 自動保存：各種変更時にlocalStorageへ保存 ===
+    // キャラクター名
+    document.getElementById('char-name').addEventListener('input', saveToStorage);
+    // 能力値入力
+    document.querySelectorAll('.stat-input').forEach(input => {
+      input.addEventListener('input', saveToStorage);
+    });
+
+    // SP変更時に保存（MutationObserverを追加）
+    const saveObserver = new MutationObserver(saveToStorage);
+    saveObserver.observe(elSpTotal, { childList: true, characterData: true, subtree: true });
+
+    // HP変更時に保存（renderHp内から呼ぶ代わりに、renderHpの後に保存）
+    const origRenderHp = renderHp;
+    renderHp = function() {
+      origRenderHp();
+      saveToStorage();
+    };
+    // チートスキル変更時の保存（ランク変更・名前変更）
+    const origBindSlotEvents = bindSlotEvents;
+    bindSlotEvents = function(slotId) {
+      origBindSlotEvents(slotId);
+      const rankSelect = document.querySelector(`[data-rank-id="${slotId}"]`);
+      const nameInput = document.querySelector(`[data-name-id="${slotId}"]`);
+      rankSelect.addEventListener('change', saveToStorage);
+      nameInput.addEventListener('input', saveToStorage);
+    };
   </script>
 </body>
 </html>
