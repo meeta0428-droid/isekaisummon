@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>異世界召喚TRPG - ダイスローラー</title>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
   <style>
     /* === リセット & 基本 === */
     *, *::before, *::after {
@@ -1129,6 +1132,103 @@
       .hp-damage-btn, .hp-heal-btn { padding: 8px 12px; font-size: 0.8rem; }
       .hp-damage-input { padding: 8px 10px; font-size: 0.9rem; }
     }
+
+    /* === ルーム接続 === */
+    .room-card {
+      background: linear-gradient(135deg, rgba(0,229,255,0.08), rgba(179,136,255,0.08));
+      border: 1px solid rgba(0,229,255,0.25);
+    }
+    .room-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .room-input {
+      flex: 1;
+      min-width: 120px;
+      background: var(--bg-glass);
+      border: 1px solid var(--border-glow);
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 1rem;
+      font-family: 'Orbitron', sans-serif;
+      color: var(--accent-cyan);
+      text-align: center;
+      letter-spacing: 2px;
+      outline: none;
+      text-transform: uppercase;
+    }
+    .room-input:focus {
+      border-color: var(--accent-cyan);
+      box-shadow: 0 0 12px rgba(0,229,255,0.2);
+    }
+    .room-input::placeholder {
+      font-family: 'Noto Sans JP', sans-serif;
+      color: var(--text-secondary);
+      opacity: 0.5;
+      letter-spacing: 0;
+      text-transform: none;
+    }
+    .room-btn {
+      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+      border: none;
+      border-radius: 10px;
+      padding: 10px 20px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--bg-primary);
+      cursor: pointer;
+      font-family: 'Noto Sans JP', sans-serif;
+      transition: all 0.3s;
+      white-space: nowrap;
+    }
+    .room-btn:hover {
+      box-shadow: 0 0 16px rgba(0,229,255,0.4);
+      transform: translateY(-1px);
+    }
+    .room-btn:active { transform: scale(0.95); }
+    .room-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .room-status {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+    .room-status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--text-secondary);
+    }
+    .room-status-dot.connected {
+      background: var(--success-green);
+      box-shadow: 0 0 6px var(--success-green);
+    }
+    .room-status-dot.disconnected {
+      background: var(--fail-red);
+    }
+    .room-disconnect-btn {
+      background: none;
+      border: 1px solid rgba(255,82,82,0.4);
+      border-radius: 8px;
+      padding: 4px 10px;
+      font-size: 0.7rem;
+      color: var(--fail-red);
+      cursor: pointer;
+      font-family: 'Noto Sans JP', sans-serif;
+      margin-left: auto;
+    }
+    .room-disconnect-btn:hover {
+      background: rgba(255,82,82,0.1);
+    }
   </style>
 </head>
 <body>
@@ -1137,6 +1237,19 @@
     <div class="header">
       <h1>DICE ROLLER</h1>
       <p class="subtitle">異世界召喚TRPG</p>
+    </div>
+
+    <!-- ルーム接続 -->
+    <div class="card room-card">
+      <div class="card-title">🌐 ルーム接続（データ共有）</div>
+      <div class="room-row" id="room-join-row">
+        <input type="text" class="room-input" id="room-id-input" placeholder="ルームIDを入力" maxlength="20">
+        <button class="room-btn" id="btn-room-join">🔗 接続</button>
+      </div>
+      <div class="room-status" id="room-status">
+        <div class="room-status-dot disconnected" id="room-status-dot"></div>
+        <span id="room-status-text">オフライン（ローカル保存のみ）</span>
+      </div>
     </div>
 
     <!-- キャラクター情報 -->
@@ -1298,6 +1411,25 @@
   </div>
 
   <script>
+    // === Firebase初期化 ===
+    const firebaseConfig = {
+      apiKey: "AIzaSyCs9EHTPB7T3rOQmsI-JwLrv7nZaBWB_vU",
+      authDomain: "isekaisummon-ce7d7.firebaseapp.com",
+      databaseURL: "https://isekaisummon-ce7d7-default-rtdb.firebaseio.com",
+      projectId: "isekaisummon-ce7d7",
+      storageBucket: "isekaisummon-ce7d7.firebasestorage.app",
+      messagingSenderId: "571873023442",
+      appId: "1:571873023442:web:e39a8e87116a559d60e40b"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // === ルーム接続状態 ===
+    let currentRoomId = null;
+    let firebaseRef = null;
+    let firebaseListener = null;
+    let isSyncingFromFirebase = false; // Firebase→ローカル反映中フラグ
+
     // === 状態管理 ===
     let diceCount = 2;
     let spTotal = 3; // 初期値は知力と同じ（デフォルト3）
@@ -1309,9 +1441,9 @@
     // === localStorage保存キー ===
     const SAVE_KEY = 'isekaiTRPG_saveData';
 
-    // セーブ関数
-    function saveToStorage() {
-      const data = {
+    // セーブデータを作成
+    function buildSaveData() {
+      return {
         charName: document.getElementById('char-name').value,
         stats: {
           hp: parseInt(document.getElementById('stat-hp').value) || 3,
@@ -1324,15 +1456,93 @@
         hpMax: hpMax,
         cheatSlots: skillSlots.map(s => ({ name: s.name, rank: s.rank })),
         rankUseCounts: rankUseCounts,
+        lastUpdated: Date.now(),
       };
-      localStorage.setItem(SAVE_KEY, JSON.stringify(data));
     }
 
-    // ロード関数（初期化時に呼ばれる）
+    // セーブ関数（ローカル + Firebase）
+    function saveToStorage() {
+      if (isSyncingFromFirebase) return; // Firebase同期中は保存しない
+      const data = buildSaveData();
+      localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+      // Firebaseにも保存
+      if (firebaseRef) {
+        const charName = data.charName || '名無し';
+        firebaseRef.child(charName).set(data);
+      }
+    }
+
+    // ローカルからロード
     function loadFromStorage() {
       const raw = localStorage.getItem(SAVE_KEY);
       if (!raw) return null;
       try { return JSON.parse(raw); } catch(e) { return null; }
+    }
+
+    // === ルーム接続ロジック ===
+    const elRoomInput = document.getElementById('room-id-input');
+    const elRoomJoinBtn = document.getElementById('btn-room-join');
+    const elRoomStatusDot = document.getElementById('room-status-dot');
+    const elRoomStatusText = document.getElementById('room-status-text');
+    const elRoomJoinRow = document.getElementById('room-join-row');
+
+    // ルーム接続
+    elRoomJoinBtn.addEventListener('click', () => {
+      const roomId = elRoomInput.value.trim();
+      if (!roomId) return;
+      joinRoom(roomId);
+    });
+    // Enterキーでも接続
+    elRoomInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') elRoomJoinBtn.click();
+    });
+
+    function joinRoom(roomId) {
+      // 既存リスナーを解除
+      if (firebaseListener && firebaseRef) {
+        firebaseRef.off('value', firebaseListener);
+      }
+
+      currentRoomId = roomId;
+      firebaseRef = db.ref('rooms/' + roomId);
+
+      // 接続状態を更新
+      elRoomStatusDot.className = 'room-status-dot connected';
+      elRoomStatusText.textContent = `接続中: ${roomId}`;
+      elRoomInput.disabled = true;
+      elRoomJoinBtn.textContent = '🔌 切断';
+      elRoomJoinBtn.onclick = disconnectRoom;
+
+      // ローカル保存のルームIDを記録
+      localStorage.setItem('isekaiTRPG_roomId', roomId);
+
+      // 現在のデータをFirebaseに送信
+      saveToStorage();
+
+      // Firebaseリスナー開始（他のプレイヤーのデータ変更を監視）
+      // ※自分のデータ更新は自分で処理するので、他のプレイヤーのデータ変更のみ反映
+    }
+
+    function disconnectRoom() {
+      if (firebaseListener && firebaseRef) {
+        firebaseRef.off('value', firebaseListener);
+      }
+      currentRoomId = null;
+      firebaseRef = null;
+      firebaseListener = null;
+
+      elRoomStatusDot.className = 'room-status-dot disconnected';
+      elRoomStatusText.textContent = 'オフライン（ローカル保存のみ）';
+      elRoomInput.disabled = false;
+      elRoomInput.value = '';
+      elRoomJoinBtn.textContent = '🔗 接続';
+      elRoomJoinBtn.onclick = () => {
+        const roomId = elRoomInput.value.trim();
+        if (!roomId) return;
+        joinRoom(roomId);
+      };
+
+      localStorage.removeItem('isekaiTRPG_roomId');
     }
 
     // ランクごとのSP消費コスト & ボーナス
@@ -1953,6 +2163,13 @@
         // 初回：デフォルト値3で初期化
         const hpStat = parseInt(document.getElementById('stat-hp').value) || 3;
         updateHpFromStat(hpStat);
+      }
+
+      // 前回接続していたルームに自動再接続
+      const savedRoomId = localStorage.getItem('isekaiTRPG_roomId');
+      if (savedRoomId) {
+        elRoomInput.value = savedRoomId;
+        joinRoom(savedRoomId);
       }
     })();
 
