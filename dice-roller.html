@@ -1465,10 +1465,9 @@
       if (isSyncingFromFirebase) return; // Firebase同期中は保存しない
       const data = buildSaveData();
       localStorage.setItem(SAVE_KEY, JSON.stringify(data));
-      // Firebaseにも保存
+      // Firebaseにも保存（直接IDの直下）
       if (firebaseRef) {
-        const charName = data.charName || '名無し';
-        firebaseRef.child(charName).set(data);
+        firebaseRef.set(data);
       }
     }
 
@@ -1479,7 +1478,7 @@
       try { return JSON.parse(raw); } catch(e) { return null; }
     }
 
-    // === ルーム接続ロジック ===
+    // === ルーム（データ共有）接続ロジック ===
     const elRoomInput = document.getElementById('room-id-input');
     const elRoomJoinBtn = document.getElementById('btn-room-join');
     const elRoomStatusDot = document.getElementById('room-status-dot');
@@ -1497,6 +1496,56 @@
       if (e.key === 'Enter') elRoomJoinBtn.click();
     });
 
+    // 画面にデータを反映する関数（Firebase同期用）
+    function applyDataToUI(saved) {
+      if (!saved) return;
+      isSyncingFromFirebase = true;
+
+      if (saved.charName !== undefined) document.getElementById('char-name').value = saved.charName;
+      if (saved.stats) {
+        ['hp', 'agi', 'int', 'cha'].forEach(key => {
+          if (saved.stats[key] !== undefined) {
+            const input = document.getElementById(`stat-${key}`);
+            input.value = saved.stats[key];
+            const btn = document.querySelector(`[data-stat-key="${key}"]`);
+            btn.disabled = saved.stats[key] <= 0;
+          }
+        });
+      }
+      if (saved.sp !== undefined) {
+        spTotal = saved.sp;
+        elSpTotal.textContent = spTotal;
+      }
+      if (saved.hpMax !== undefined && saved.hpCurrent !== undefined) {
+        hpMax = saved.hpMax;
+        hpCurrent = saved.hpCurrent;
+        origRenderHp(); // saveToStorageをトリガーしない元の関数を呼ぶ
+      }
+      if (saved.cheatSlots) {
+        // 全スロット削除して再構築
+        document.getElementById('skill-slots').innerHTML = '';
+        skillSlots = [];
+        saved.cheatSlots.forEach(cs => {
+          addSlot();
+          const slot = skillSlots[skillSlots.length - 1];
+          document.querySelector(`[data-name-id="${slot.id}"]`).value = cs.name || '';
+          document.querySelector(`[data-rank-id="${slot.id}"]`).value = cs.rank || 'SSS';
+          slot.name = cs.name || '';
+          slot.rank = cs.rank || 'SSS';
+          document.querySelector(`[data-bonus-id="${slot.id}"]`).textContent = `効果: 成功ダイス +${RANK_BONUS[slot.rank]}`;
+          updateSlotCostDisplay(slot.id);
+        });
+        updateAllSlotButtons();
+      }
+      if (saved.rankUseCounts) {
+        rankUseCounts = { ...rankUseCounts, ...saved.rankUseCounts };
+      }
+
+      // ローカルも更新
+      localStorage.setItem(SAVE_KEY, JSON.stringify(saved));
+      isSyncingFromFirebase = false;
+    }
+
     function joinRoom(roomId) {
       // 既存リスナーを解除
       if (firebaseListener && firebaseRef) {
@@ -1504,11 +1553,11 @@
       }
 
       currentRoomId = roomId;
-      firebaseRef = db.ref('rooms/' + roomId);
+      firebaseRef = db.ref('shared_data/' + roomId);
 
       // 接続状態を更新
       elRoomStatusDot.className = 'room-status-dot connected';
-      elRoomStatusText.textContent = `接続中: ${roomId}`;
+      elRoomStatusText.textContent = `同期中: ${roomId}`;
       elRoomInput.disabled = true;
       elRoomJoinBtn.textContent = '🔌 切断';
       elRoomJoinBtn.onclick = disconnectRoom;
@@ -1516,11 +1565,21 @@
       // ローカル保存のルームIDを記録
       localStorage.setItem('isekaiTRPG_roomId', roomId);
 
-      // 現在のデータをFirebaseに送信
-      saveToStorage();
-
-      // Firebaseリスナー開始（他のプレイヤーのデータ変更を監視）
-      // ※自分のデータ更新は自分で処理するので、他のプレイヤーのデータ変更のみ反映
+      // Firebaseリスナー開始（他の端末の変更を反映）
+      // 初回接続時は、クラウド側が空ならローカルデータを送信する処理を入れるため once で確認
+      firebaseRef.once('value').then((snapshot) => {
+        if (!snapshot.exists()) {
+          // Firebaseにデータがなければ現在のローカルデータをアップロード
+          saveToStorage();
+        }
+        // 継続的なリスナーを設定
+        firebaseListener = firebaseRef.on('value', (snap) => {
+          const data = snap.val();
+          if (data) {
+            applyDataToUI(data);
+          }
+        });
+      });
     }
 
     function disconnectRoom() {
