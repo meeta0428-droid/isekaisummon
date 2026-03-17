@@ -112,6 +112,21 @@
       margin-bottom: 16px;
     }
 
+    /* === 判定結果ヘッダー（能力値判定用） === */
+    .stat-result-header {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      justify-content: center;
+    }
+    .stat-result-header .stat-result-name {
+      font-weight: 700;
+      color: var(--accent-cyan);
+    }
+
     /* === ダイス数設定 === */
     .dice-controls {
       display: flex;
@@ -922,32 +937,6 @@
       animation: pulse 0.5s;
     }
 
-    /* 能力値判定結果表示エリア */
-    .stat-result-area {
-      margin-top: 14px;
-      padding: 14px;
-      background: rgba(0,0,0,0.25);
-      border-radius: 12px;
-      border: 1px solid rgba(255,255,255,0.06);
-      display: none;
-    }
-    .stat-result-area.show {
-      display: block;
-      animation: fadeIn 0.3s;
-    }
-    .stat-result-header {
-      font-size: 0.75rem;
-      color: var(--text-secondary);
-      margin-bottom: 8px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .stat-result-header .stat-result-name {
-      font-weight: 700;
-      color: var(--accent-cyan);
-    }
-
     /* === HPトラッカー === */
     .hp-display {
       display: flex;
@@ -1285,8 +1274,6 @@
           <button class="stat-roll-btn" data-stat-key="cha" disabled>🎲 判定</button>
         </div>
       </div>
-      <!-- 能力値判定結果 -->
-      <div class="stat-result-area" id="stat-result-area"></div>
     </div>
 
     <!-- HPトラッカー -->
@@ -1517,7 +1504,7 @@
       }
       if (saved.sp !== undefined) {
         spTotal = saved.sp;
-        elSpTotal.textContent = spTotal;
+        updateSpDisplay(); // updateSpDisplay calls elSpTotal.textContent = spTotal;
       }
       if (saved.hpMax !== undefined && saved.hpCurrent !== undefined) {
         hpMax = saved.hpMax;
@@ -2184,8 +2171,8 @@
       }
       html += '</div>';
 
-      elStatResultArea.innerHTML = html;
-      elStatResultArea.classList.add('show');
+      elResultsArea.innerHTML = html;
+      elResultsArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
     // === 初期化：localStorageからデータ復元 ===
