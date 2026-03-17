@@ -1454,7 +1454,8 @@
         sp: spTotal,
         hpCurrent: hpCurrent,
         hpMax: hpMax,
-        cheatSlots: skillSlots.map(s => ({ name: s.name, rank: s.rank })),
+        cheatSlots: skillSlots.map(s => ({ name: s.name, rank: s.rank, used: s.used })),
+        activeBonus: activeBonus,
         rankUseCounts: rankUseCounts,
         lastUpdated: Date.now(),
       };
@@ -1501,12 +1502,14 @@
       if (!saved) return;
       isSyncingFromFirebase = true;
 
-      if (saved.charName !== undefined) document.getElementById('char-name').value = saved.charName;
+      if (saved.charName !== undefined && document.activeElement.id !== 'char-name') {
+        document.getElementById('char-name').value = saved.charName;
+      }
       if (saved.stats) {
         ['hp', 'agi', 'int', 'cha'].forEach(key => {
           if (saved.stats[key] !== undefined) {
             const input = document.getElementById(`stat-${key}`);
-            input.value = saved.stats[key];
+            if (document.activeElement !== input) input.value = saved.stats[key];
             const btn = document.querySelector(`[data-stat-key="${key}"]`);
             btn.disabled = saved.stats[key] <= 0;
           }
@@ -1521,20 +1524,50 @@
         hpCurrent = saved.hpCurrent;
         origRenderHp(); // saveToStorageをトリガーしない元の関数を呼ぶ
       }
+      if (saved.activeBonus !== undefined) {
+        activeBonus = saved.activeBonus;
+      }
       if (saved.cheatSlots) {
-        // 全スロット削除して再構築
-        document.getElementById('skill-slots').innerHTML = '';
-        skillSlots = [];
-        saved.cheatSlots.forEach(cs => {
-          addSlot();
-          const slot = skillSlots[skillSlots.length - 1];
-          document.querySelector(`[data-name-id="${slot.id}"]`).value = cs.name || '';
-          document.querySelector(`[data-rank-id="${slot.id}"]`).value = cs.rank || 'SSS';
-          slot.name = cs.name || '';
-          slot.rank = cs.rank || 'SSS';
-          document.querySelector(`[data-bonus-id="${slot.id}"]`).textContent = `効果: 成功ダイス +${RANK_BONUS[slot.rank]}`;
+        // DOMを再構築せずに更新する
+        saved.cheatSlots.forEach((cs, i) => {
+          if (i >= skillSlots.length) addSlot(); // 足りない場合は追加
+          const slot = skillSlots[i];
+          const nameInput = document.querySelector(`[data-name-id="${slot.id}"]`);
+          const rankSelect = document.querySelector(`[data-rank-id="${slot.id}"]`);
+          const btn = document.querySelector(`[data-use-id="${slot.id}"]`);
+          const slotEl = document.getElementById(`slot-${slot.id}`);
+
+          if (cs.name !== undefined && document.activeElement !== nameInput) {
+            nameInput.value = cs.name;
+            slot.name = cs.name;
+          }
+          if (cs.rank !== undefined && document.activeElement !== rankSelect) {
+            rankSelect.value = cs.rank;
+            slot.rank = cs.rank;
+            document.querySelector(`[data-bonus-id="${slot.id}"]`).textContent = `効果: 成功ダイス +${RANK_BONUS[slot.rank]}`;
+          }
+          if (cs.used !== undefined) {
+            slot.used = cs.used;
+            if (slot.used) {
+              btn.classList.add('used');
+              btn.textContent = `✓ 発動中（成功+${RANK_BONUS[slot.rank]}）次のロールに適用`;
+              slotEl.classList.add('active-skill');
+              nameInput.disabled = true;
+              rankSelect.disabled = true;
+            } else {
+              btn.classList.remove('used');
+              btn.textContent = '⚡ スキル使用';
+              slotEl.classList.remove('active-skill');
+              nameInput.disabled = false;
+              rankSelect.disabled = false;
+            }
+          }
           updateSlotCostDisplay(slot.id);
         });
+        // 超過分のスロットを削除
+        while (skillSlots.length > saved.cheatSlots.length) {
+          removeSlot(skillSlots[skillSlots.length - 1].id);
+        }
         updateAllSlotButtons();
       }
       if (saved.rankUseCounts) {
@@ -1720,6 +1753,9 @@
       // コスト表示・ボタン状態を更新
       skillSlots.forEach(s => updateSlotCostDisplay(s.id));
       updateAllSlotButtons();
+
+      // リセット後の状態を保存（他端末にも反映）
+      saveToStorage();
     }
 
     // === 結果の描画 ===
