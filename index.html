@@ -1757,6 +1757,13 @@
         if (val === 1) cls = 'sp-trigger';
         html += `<div class="die ${cls}" style="animation-delay: ${i * 0.08}s">${val}</div>`;
       });
+      
+      // チートボーナス分の確定成功ダイスを描画
+      for (let i = 0; i < bonus; i++) {
+        const delay = (results.length + i) * 0.08;
+        html += `<div class="die success" style="animation-delay: ${delay}s; border-color: var(--accent-purple); color: var(--accent-purple); box-shadow: 0 0 12px rgba(179,136,255,0.4); text-shadow: 0 0 8px rgba(179,136,255,0.6);">★</div>`;
+      }
+      
       html += '</div>';
 
       // ボーナスバッジ
@@ -1790,6 +1797,12 @@
         if (val === 1) cls = 'sp-trigger';
         diceHtml += `<span class="history-die ${cls}">${val}</span>`;
       });
+      
+      // チートボーナス分の確定成功ダイスを履歴に追加
+      for (let i = 0; i < bonus; i++) {
+        diceHtml += `<span class="history-die success" style="border-color: var(--accent-purple); color: var(--accent-purple); background: rgba(179,136,255,0.15);">★</span>`;
+      }
+      
       const spText = spGained > 0 ? `SP+${spGained}` : '';
       const bonusText = bonus > 0 ? `<span style="color:var(--accent-purple);font-size:0.65rem;margin-left:4px;">+${bonus}</span>` : '';
       const nameText = charName ? `<span style="font-size:0.75rem; color:var(--text-secondary); margin-right:8px; min-width:60px; max-width:100px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${charName}</span>` : '';
@@ -2089,6 +2102,7 @@
       hpCurrent -= dmg;
       renderHp();
       elHpDamageInput.value = '';
+      saveToStorage();
     });
 
     // 回復ボタン
@@ -2098,6 +2112,7 @@
       hpCurrent += heal;
       renderHp();
       elHpDamageInput.value = '';
+      saveToStorage();
     });
 
     // 判定ボタンのクリック処理
@@ -2173,6 +2188,13 @@
         if (val === 1) cls = 'sp-trigger';
         html += `<div class="die ${cls}" style="animation-delay: ${i * 0.08}s">${val}</div>`;
       });
+      
+      // チートボーナス分の確定成功ダイスを描画
+      for (let i = 0; i < bonus; i++) {
+        const delay = (results.length + i) * 0.08;
+        html += `<div class="die success" style="animation-delay: ${delay}s; border-color: var(--accent-purple); color: var(--accent-purple); box-shadow: 0 0 12px rgba(179,136,255,0.4); text-shadow: 0 0 8px rgba(179,136,255,0.6);">★</div>`;
+      }
+      
       html += '</div>';
 
       if (bonus > 0) {
