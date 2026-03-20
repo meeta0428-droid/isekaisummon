@@ -1417,6 +1417,9 @@
     let firebaseListener = null;
     let isSyncingFromFirebase = false; // Firebase→ローカル反映中フラグ
 
+    // === ローカルセッションID（ダイス履歴の重複受信防止用） ===
+    const localSessionId = Math.random().toString(36).substring(2, 15);
+
     // === 状態管理 ===
     let diceCount = 2;
     let spTotal = 3; // 初期値は知力と同じ（デフォルト3）
@@ -1448,15 +1451,12 @@
       };
     }
 
-    // セーブ関数（ローカル + Firebase）
+    // セーブ関数（ローカルのみ）
     function saveToStorage() {
-      if (isSyncingFromFirebase) return; // Firebase同期中は保存しない
+      if (isSyncingFromFirebase) return; // Firebase同期中は保存しない（レガシー処理として残す）
       const data = buildSaveData();
       localStorage.setItem(SAVE_KEY, JSON.stringify(data));
-      // Firebaseにも保存（直接IDの直下）
-      if (firebaseRef) {
-        firebaseRef.set(data);
-      }
+      // Firebaseへの全体ステータス保存は行わず、個人のローカル保存のみとする
     }
 
     // ローカルからロード
@@ -1473,12 +1473,16 @@
     const elRoomStatusText = document.getElementById('room-status-text');
     const elRoomJoinRow = document.getElementById('room-join-row');
 
-    // ルーム接続
-    elRoomJoinBtn.addEventListener('click', () => {
-      const roomId = elRoomInput.value.trim();
-      if (!roomId) return;
-      joinRoom(roomId);
-    });
+    // ルーム接続・切断ボタンの制御
+    elRoomJoinBtn.onclick = () => {
+      if (currentRoomId) {
+        disconnectRoom();
+      } else {
+        const roomId = elRoomInput.value.trim();
+        if (!roomId) return;
+        joinRoom(roomId);
+      }
+    };
     // Enterキーでも接続
     elRoomInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') elRoomJoinBtn.click();
@@ -1569,42 +1573,35 @@
     function joinRoom(roomId) {
       // 既存リスナーを解除
       if (firebaseListener && firebaseRef) {
-        firebaseRef.off('value', firebaseListener);
+        firebaseRef.off('child_added', firebaseListener);
       }
 
       currentRoomId = roomId;
-      firebaseRef = db.ref('shared_data/' + roomId);
+      firebaseRef = db.ref('shared_dice/' + roomId);
 
       // 接続状態を更新
       elRoomStatusDot.className = 'room-status-dot connected';
-      elRoomStatusText.textContent = `同期中: ${roomId}`;
+      elRoomStatusText.textContent = `ダイス共有中: ${roomId}`;
       elRoomInput.disabled = true;
       elRoomJoinBtn.textContent = '🔌 切断';
-      elRoomJoinBtn.onclick = disconnectRoom;
 
       // ローカル保存のルームIDを記録
       localStorage.setItem('isekaiTRPG_roomId', roomId);
 
-      // Firebaseリスナー開始（他の端末の変更を反映）
-      // 初回接続時は、クラウド側が空ならローカルデータを送信する処理を入れるため once で確認
-      firebaseRef.once('value').then((snapshot) => {
-        if (!snapshot.exists()) {
-          // Firebaseにデータがなければ現在のローカルデータをアップロード
-          saveToStorage();
+      // Firebaseリスナー開始（新しく振られたダイス結果を受信）
+      firebaseListener = firebaseRef.limitToLast(20).on('child_added', (snap) => {
+        const data = snap.val();
+        if (data && data.sessionId !== localSessionId) {
+          // 他人が振ったダイス結果をUIに反映
+          rollNumber++;
+          addHistoryItem(rollNumber, data.results, data.spGained, data.bonus, data.finalSuccess, data.charName);
         }
-        // 継続的なリスナーを設定
-        firebaseListener = firebaseRef.on('value', (snap) => {
-          const data = snap.val();
-          if (data) {
-            applyDataToUI(data);
-          }
-        });
       });
     }
 
     function disconnectRoom() {
       if (firebaseListener && firebaseRef) {
-        firebaseRef.off('value', firebaseListener);
+        firebaseRef.off('child_added', firebaseListener);
       }
       currentRoomId = null;
       firebaseRef = null;
@@ -1615,11 +1612,6 @@
       elRoomInput.disabled = false;
       elRoomInput.value = '';
       elRoomJoinBtn.textContent = '🔗 接続';
-      elRoomJoinBtn.onclick = () => {
-        const roomId = elRoomInput.value.trim();
-        if (!roomId) return;
-        joinRoom(roomId);
-      };
 
       localStorage.removeItem('isekaiTRPG_roomId');
     }
@@ -1700,9 +1692,21 @@
       // 結果表示
       renderResults(results, successCount, failCount, spGained, totalBonus, finalSuccess);
 
-      // 履歴に追加
+      // 履歴に追加 (Firebase共有 + ローカルUI反映)
+      const charName = document.getElementById('char-name').value || '名無し';
+      if (currentRoomId && firebaseRef) {
+        firebaseRef.push({
+          sessionId: localSessionId,
+          charName: charName,
+          results: results,
+          spGained: spGained,
+          bonus: totalBonus,
+          finalSuccess: finalSuccess,
+          timestamp: firebase.database.ServerValue.TIMESTAMP
+        });
+      }
       rollNumber++;
-      addHistoryItem(rollNumber, results, spGained, totalBonus, finalSuccess);
+      addHistoryItem(rollNumber, results, spGained, totalBonus, finalSuccess, charName);
 
       // ロール後にアクティブスキルを自動リセット（1ロール限定効果）
       resetActiveSkills();
@@ -1777,7 +1781,7 @@
     }
 
     // === 履歴の追加 ===
-    function addHistoryItem(num, results, spGained, bonus, finalSuccess) {
+    function addHistoryItem(num, results, spGained, bonus, finalSuccess, charName = '') {
       const li = document.createElement('li');
       li.className = 'history-item';
       let diceHtml = '';
@@ -1788,7 +1792,9 @@
       });
       const spText = spGained > 0 ? `SP+${spGained}` : '';
       const bonusText = bonus > 0 ? `<span style="color:var(--accent-purple);font-size:0.65rem;margin-left:4px;">+${bonus}</span>` : '';
+      const nameText = charName ? `<span style="font-size:0.75rem; color:var(--text-secondary); margin-right:8px; min-width:60px; max-width:100px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${charName}</span>` : '';
       li.innerHTML = `
+        ${nameText}
         <span class="history-number">#${num}</span>
         <div class="history-dice">${diceHtml}${bonusText}</div>
         <span class="history-sp">${spText}</span>
@@ -2135,9 +2141,22 @@
         // ダイスロール後にアクティブスキルをリセット（1ロール限定効果）
         resetActiveSkills();
 
-        // 履歴にも追加
+        // 履歴にも追加 (Firebase共有 + ローカルUI反映)
+        const charName = document.getElementById('char-name').value || '名無し';
+        const displayCharName = `${charName}(${STAT_NAMES[key]})`;
+        if (currentRoomId && firebaseRef) {
+          firebaseRef.push({
+            sessionId: localSessionId,
+            charName: displayCharName,
+            results: results,
+            spGained: spGained,
+            bonus: totalBonus,
+            finalSuccess: finalSuccess,
+            timestamp: firebase.database.ServerValue.TIMESTAMP
+          });
+        }
         rollNumber++;
-        addHistoryItem(rollNumber, results, spGained, totalBonus, finalSuccess);
+        addHistoryItem(rollNumber, results, spGained, totalBonus, finalSuccess, displayCharName);
       });
     });
 
