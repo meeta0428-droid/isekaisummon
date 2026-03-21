@@ -2722,7 +2722,13 @@
         } else if (val > STAT_MAX_VALUE) {
           val = STAT_MAX_VALUE;
         }
-        totalSpent += (val - STAT_BASE_VALUE) * POINT_COST_PER_STAT;
+        
+        // 累加方式：3→4(10), 4→5(20), 5→6(30)...
+        let statSpent = 0;
+        for (let i = STAT_BASE_VALUE + 1; i <= val; i++) {
+          statSpent += (i - STAT_BASE_VALUE) * POINT_COST_PER_STAT;
+        }
+        totalSpent += statSpent;
       });
 
       // コモンパーツの消費分を加算
