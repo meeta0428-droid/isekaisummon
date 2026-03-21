@@ -1298,7 +1298,10 @@
 
     <!-- キャラクター情報 -->
     <div class="card">
-      <div class="card-title">👤 キャラクター情報</div>
+      <div class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
+        <span>👤 キャラクター情報</span>
+        <span id="creation-points" style="color: var(--accent-cyan); font-size: 0.8rem;">残り作成ポイント: 100</span>
+      </div>
       <div class="char-name-group">
         <label class="char-name-label">キャラクター名</label>
         <input type="text" class="char-name-input" id="char-name" placeholder="キャラクター名を入力">
@@ -1307,25 +1310,25 @@
         <div class="stat-row" data-stat="hp">
           <div class="stat-icon hp">💪</div>
           <div class="stat-name">体力</div>
-          <input type="number" class="stat-input" id="stat-hp" min="0" max="20" value="3">
+          <input type="number" class="stat-input" id="stat-hp" min="3" max="20" value="3" data-prev-val="3">
           <button class="stat-roll-btn" data-stat-key="hp" disabled>🎲 判定</button>
         </div>
         <div class="stat-row" data-stat="agi">
           <div class="stat-icon agi">⚡</div>
           <div class="stat-name">敏捷力</div>
-          <input type="number" class="stat-input" id="stat-agi" min="0" max="20" value="3">
+          <input type="number" class="stat-input" id="stat-agi" min="3" max="20" value="3" data-prev-val="3">
           <button class="stat-roll-btn" data-stat-key="agi" disabled>🎲 判定</button>
         </div>
         <div class="stat-row" data-stat="int">
           <div class="stat-icon int">📚</div>
           <div class="stat-name">知力</div>
-          <input type="number" class="stat-input" id="stat-int" min="0" max="20" value="3">
+          <input type="number" class="stat-input" id="stat-int" min="3" max="20" value="3" data-prev-val="3">
           <button class="stat-roll-btn" data-stat-key="int" disabled>🎲 判定</button>
         </div>
         <div class="stat-row" data-stat="cha">
           <div class="stat-icon cha">✨</div>
           <div class="stat-name">魅力</div>
-          <input type="number" class="stat-input" id="stat-cha" min="0" max="20" value="3">
+          <input type="number" class="stat-input" id="stat-cha" min="3" max="20" value="3" data-prev-val="3">
           <button class="stat-roll-btn" data-stat-key="cha" disabled>🎲 判定</button>
         </div>
       </div>
@@ -1487,6 +1490,11 @@
     let slotIdCounter = 0;
     let activeBonus = 0; // 現在適用中のチートボーナス合計
     let lastRollData = null; // 直前のダイスロール情報（後乗せボーナス用）
+
+    // === キャラクター作成ポイント関連 ===
+    const MAX_CREATION_POINTS = 100;
+    const STAT_BASE_VALUE = 3;
+    const POINT_COST_PER_STAT = 10;
 
     // === localStorage保存キー ===
     const SAVE_KEY = 'isekaiTRPG_saveData';
@@ -2557,14 +2565,75 @@
         elRoomInput.value = savedRoomId;
         joinRoom(savedRoomId);
       }
+      
+      // 初回・復元後に作成ポイントを再計算
+      calculateCreationPoints();
     })();
+
+    // 作成ポイントの計算処理
+    function calculateCreationPoints() {
+      let totalSpent = 0;
+      const statInputs = document.querySelectorAll('.stat-input');
+      
+      statInputs.forEach(input => {
+        let val = parseInt(input.value);
+        if (isNaN(val) || val < STAT_BASE_VALUE) {
+          val = STAT_BASE_VALUE;
+        }
+        totalSpent += (val - STAT_BASE_VALUE) * POINT_COST_PER_STAT;
+      });
+
+      let remaining = MAX_CREATION_POINTS - totalSpent;
+      const elPoints = document.getElementById('creation-points');
+      
+      if (elPoints) {
+        elPoints.textContent = `残り作成ポイント: ${remaining}`;
+        elPoints.style.color = remaining <= 0 ? 'var(--fail-red)' : 'var(--accent-cyan)';
+      }
+      return remaining;
+    }
 
     // === 自動保存：各種変更時にlocalStorageへ保存 ===
     // キャラクター名
     document.getElementById('char-name').addEventListener('input', saveToStorage);
-    // 能力値入力
+    // 能力値入力（ポイント制の制御および保存）
     document.querySelectorAll('.stat-input').forEach(input => {
-      input.addEventListener('input', saveToStorage);
+      // ロード時点での値をセット（すでに data-prev-val は3だが、復元時の値を入れる）
+      input.dataset.prevVal = input.value || STAT_BASE_VALUE;
+      
+      input.addEventListener('input', (e) => {
+        const target = e.target;
+        let val = parseInt(target.value);
+        
+        // 最低値処理
+        if (isNaN(val) || val < STAT_BASE_VALUE) {
+          target.value = STAT_BASE_VALUE;
+          val = STAT_BASE_VALUE;
+        }
+
+        // 入力があった場合の残りポイント計算
+        let remaining = calculateCreationPoints();
+
+        // もし消費ポイントが100を超えた（残りポイントがマイナスになった）場合
+        if (remaining < 0) {
+          // 入力をキャンセルして元の値に戻す
+          target.value = target.dataset.prevVal;
+          // 表示を元に戻すために再計算
+          calculateCreationPoints();
+          return; // 保存せず終了
+        }
+
+        // 入力が正常なら、今回の新しい値を previous 値として記憶
+        target.dataset.prevVal = target.value;
+        
+        // 判定ボタンの有効・無効を更新
+        const key = target.id.replace('stat-', '');
+        const btn = document.querySelector(`[data-stat-key="${key}"]`);
+        if (btn) btn.disabled = val <= 0;
+
+        // 保存
+        saveToStorage();
+      });
     });
 
     // SP変更時に保存（MutationObserverを追加）
