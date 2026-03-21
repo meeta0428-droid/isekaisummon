@@ -2251,14 +2251,6 @@
 
         const pts = calculateCreationPoints();
 
-        // エラー（ポイント上限超え）の場合は変更を取り消す
-        if (pts.chp < 0 || pts.cp < 0) {
-          baseRankSelect.value = baseRankSelect.dataset.prevVal;
-          rankSelect.value = rankSelect.dataset.prevVal;
-          calculateCreationPoints();
-          return;
-        }
-
         // 正常完了時：値を保存
         baseRankSelect.dataset.prevVal = baseRankSelect.value;
         rankSelect.dataset.prevVal = rankSelect.value;
@@ -2777,15 +2769,8 @@
             updatePartDesc(i);
             
             const pts = calculateCreationPoints();
-            if (pts.cp < 0 || pts.chp < 0) {
-              // 選択キャンセル
-              target.selectedIndex = target.dataset.prevIdx;
-              updatePartDesc(i);
-              calculateCreationPoints();
-            } else {
-              target.dataset.prevIdx = target.selectedIndex;
-              saveToStorage();
-            }
+            target.dataset.prevIdx = target.selectedIndex;
+            saveToStorage();
           });
         }
       }
@@ -2890,13 +2875,6 @@
         targetEl.textContent = val;
         
         const pts = calculateCreationPoints();
-        // もし消費ポイントが上限を超えた場合、変更を取り消す
-        if (pts.cp < 0 || pts.chp < 0) {
-          targetEl.dataset.val = prevVal;
-          targetEl.textContent = prevVal;
-          calculateCreationPoints();
-          return;
-        }
         
         // 判定ボタンの有効化更新
         const key = targetId.replace('stat-', '');
