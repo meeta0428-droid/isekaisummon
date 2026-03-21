@@ -2758,15 +2758,21 @@
       
       input.addEventListener('input', (e) => {
         const target = e.target;
-        let val = parseInt(target.value);
+        const valStr = target.value;
+        let val = parseInt(valStr);
         
-        // 最低値・最高値処理
-        if (isNaN(val) || val < STAT_BASE_VALUE) {
-          target.value = STAT_BASE_VALUE;
+        // スマホやキーボード入力で一旦空になった場合を許容（内部的には最低値として計算）
+        if (valStr === '') {
           val = STAT_BASE_VALUE;
-        } else if (val > STAT_MAX_VALUE) {
-          target.value = STAT_MAX_VALUE;
-          val = STAT_MAX_VALUE;
+        } else {
+          // 最低値・最高値処理
+          if (isNaN(val) || val < STAT_BASE_VALUE) {
+            target.value = STAT_BASE_VALUE;
+            val = STAT_BASE_VALUE;
+          } else if (val > STAT_MAX_VALUE) {
+            target.value = STAT_MAX_VALUE;
+            val = STAT_MAX_VALUE;
+          }
         }
 
         // 入力があった場合の残りポイント計算
@@ -2782,7 +2788,7 @@
         }
 
         // 入力が正常なら、今回の新しい値を previous 値として記憶
-        target.dataset.prevVal = target.value;
+        target.dataset.prevVal = valStr === '' ? STAT_BASE_VALUE : target.value;
         
         // 判定ボタンの有効・無効を更新
         const key = target.id.replace('stat-', '');
@@ -2791,6 +2797,15 @@
 
         // 保存
         saveToStorage();
+      });
+
+      // フォーカスが外れたとき、空ならベース値に戻す
+      input.addEventListener('blur', (e) => {
+        if (e.target.value === '') {
+          e.target.value = STAT_BASE_VALUE;
+          calculateCreationPoints();
+          saveToStorage();
+        }
       });
     });
 
