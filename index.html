@@ -1122,6 +1122,61 @@
       .hp-damage-input { padding: 8px 10px; font-size: 0.9rem; }
     }
 
+    /* === チャット・履歴エリア === */
+    .chat-input-area {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 15px;
+    }
+    .chat-input {
+      flex: 1;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: var(--bg-glass);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: var(--text-primary);
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .chat-input:focus {
+      border-color: var(--accent-cyan);
+    }
+    .btn-chat-send {
+      background: var(--accent-cyan);
+      color: #000;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      padding: 0 16px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: transform 0.1s;
+    }
+    .btn-chat-send:active { transform: scale(0.95); }
+    
+    .chat-message-item {
+      background: rgba(0,229,255,0.05);
+      border-left: 3px solid var(--accent-cyan);
+      padding: 10px 12px;
+      margin-bottom: 8px;
+      border-radius: 4px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      animation: slideIn 0.3s ease forwards;
+    }
+    .chat-author {
+      font-size: 0.75rem;
+      color: var(--accent-cyan);
+      font-weight: bold;
+    }
+    .chat-text {
+      font-size: 0.9rem;
+      word-break: break-all;
+      line-height: 1.4;
+    }
+
     /* === ルーム接続 === */
     .room-card {
       background: linear-gradient(135deg, rgba(0,229,255,0.08), rgba(179,136,255,0.08));
@@ -1387,9 +1442,13 @@
       </div>
     </div>
 
-    <!-- 履歴 -->
+    <!-- 履歴・チャット -->
     <div class="card">
-      <div class="card-title">📜 履歴</div>
+      <div class="card-title">📜 履歴・チャット</div>
+      <div class="chat-input-area">
+        <input type="text" class="chat-input" id="chat-input" placeholder="メッセージを入力（Enterで送信）">
+        <button class="btn-chat-send" id="btn-chat-send">送信</button>
+      </div>
       <ul class="history-list" id="history-list">
         <!-- 履歴アイテムが動的に追加される -->
       </ul>
@@ -1593,9 +1652,14 @@
       firebaseListener = firebaseRef.limitToLast(20).on('child_added', (snap) => {
         const data = snap.val();
         if (data && data.sessionId !== localSessionId) {
-          // 他人が振ったダイス結果をUIに反映
-          rollNumber++;
-          addHistoryItem(rollNumber, data.results, data.spGained, data.bonus, data.finalSuccess, data.charName, snap.key);
+          if (data.type === 'chat') {
+            // 他人のチャットを受信
+            addChatItem(data.charName, data.text, snap.key);
+          } else {
+            // 他人が振ったダイス結果をUIに反映
+            rollNumber++;
+            addHistoryItem(rollNumber, data.results, data.spGained, data.bonus, data.finalSuccess, data.charName, snap.key);
+          }
         }
       });
       // 既存のロール結果が後からチートスキルによって書き換えられた場合の受信
@@ -1873,6 +1937,51 @@
         <span class="history-sp">${spText}</span>
       `;
     }
+
+    // === チャットの追加 ===
+    function addChatItem(charName, text, firebaseKey = '') {
+      const li = document.createElement('li');
+      if (firebaseKey) li.id = `history-item-${firebaseKey}`;
+      li.className = 'chat-message-item';
+      li.innerHTML = `
+        <div class="chat-author">${charName}</div>
+        <div class="chat-text">${text}</div>
+      `;
+      elHistoryList.insertBefore(li, elHistoryList.firstChild);
+    }
+
+    // === チャット送信処理 ===
+    const elChatInput = document.getElementById('chat-input');
+    const elBtnChatSend = document.getElementById('btn-chat-send');
+
+    function sendChatMessage() {
+      const text = elChatInput.value.trim();
+      if (!text) return;
+      const charName = document.getElementById('char-name').value || '名無し';
+      
+      let newRef = null;
+      if (currentRoomId && firebaseRef) {
+        newRef = firebaseRef.push({
+          type: 'chat',
+          sessionId: localSessionId,
+          charName: charName,
+          text: text,
+          timestamp: firebase.database.ServerValue.TIMESTAMP
+        });
+      }
+      
+      const key = newRef ? newRef.key : '';
+      addChatItem(charName, text, key);
+      elChatInput.value = '';
+    }
+
+    elBtnChatSend.addEventListener('click', sendChatMessage);
+    elChatInput.addEventListener('keydown', (e) => {
+      // IME変換中のEnterを無視するため keyCode のチェックが必要な場合があるが、通常は isComposing で弾く
+      if (e.key === 'Enter' && !e.isComposing) {
+        sendChatMessage();
+      }
+    });
 
     // === SPリセット ===
     elBtnSpReset.addEventListener('click', () => {
