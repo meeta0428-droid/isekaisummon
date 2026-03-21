@@ -1273,6 +1273,45 @@
     .room-disconnect-btn:hover {
       background: rgba(255,82,82,0.1);
     }
+
+    /* === コモンパーツ === */
+    .common-parts-list {
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .common-part-item {
+      background: rgba(0,229,255,0.05);
+      border: 1px solid rgba(0,229,255,0.2);
+      border-radius: 8px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .common-part-select {
+      background: var(--bg-glass);
+      color: var(--text-primary);
+      border: 1px solid var(--border-glow);
+      padding: 8px;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      outline: none;
+      width: 100%;
+    }
+    .common-part-select:focus {
+      border-color: var(--accent-cyan);
+    }
+    .common-part-desc {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      line-height: 1.4;
+    }
+    .common-part-desc strong {
+      color: var(--accent-cyan);
+    }
+    .common-part-cost {
+      color: var(--accent-purple);
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
@@ -1408,6 +1447,14 @@
       </div>
     </div>
 
+    <!-- コモンパーツ -->
+    <div class="card" id="common-parts-card">
+      <div class="card-title">🎒 コモンパーツ <span style="font-size:0.65rem;color:var(--text-secondary);text-transform:none;letter-spacing:0;">（最大6個）</span></div>
+      <div class="common-parts-list" id="common-parts-list">
+        <!-- JSで6枠生成 -->
+      </div>
+    </div>
+
     <!-- チートスキル -->
     <div class="card">
       <div class="card-title">🔮 チートスキル <span style="font-size:0.65rem;color:var(--text-secondary);text-transform:none;letter-spacing:0;">（最大3つ）</span></div>
@@ -1500,8 +1547,42 @@
     // === localStorage保存キー ===
     const SAVE_KEY = 'isekaiTRPG_saveData';
 
+    // === コモンパーツ データ ===
+    const COMMON_PARTS = [
+      { name: '未装備', cost: 0, stat: 'ー', effect: '' },
+      { name: '剣', cost: 5, stat: '体力', effect: '戦闘で判定＋１d。鋭い刃のついた刀剣類' },
+      { name: '斧', cost: 5, stat: '体力', effect: '戦闘判定で６が出るとダメージ＋１。大ぶりな斧類' },
+      { name: 'ハンマー', cost: 5, stat: '体力', effect: '戦闘判定で必要成功数が１下がる。大きなハンマー。' },
+      { name: '弓', cost: 5, stat: '敏捷力', effect: '戦闘判定で射程１で攻撃することができる。遠距離攻撃ができる弓。' },
+      { name: '盾', cost: 5, stat: '体力', effect: '戦闘で防御判定時に＋１d。敵からの攻撃を受け止めることができる盾' },
+      { name: '鎧', cost: 5, stat: 'ー', effect: 'HP＋５。攻撃を受ける時にダメージを防ぐ鎧。' },
+      { name: 'ハンドガン', cost: 10, stat: '敏捷力', effect: '戦闘で判定成功数＋１。射程１。銃弾を放つ武器。使用するたびにSPを１点使用する。' },
+      { name: 'サブマシンガン', cost: 15, stat: '敏捷力', effect: '戦闘で１エリア全体を攻撃できる。射程１。大量の銃弾を放つ武器。使用するたびにSPを１点使用する。' },
+      { name: 'スマートフォン', cost: 5, stat: '知力', effect: '情報で判定＋１d。回線が繋がらないスマートフォン。充電は常に満タン。チートスキルが次元を超えるものなら回線が繋がるかもしれない。' },
+      { name: '攻撃魔法', cost: 10, stat: '知力', effect: '戦闘で判定＋２d。射程１。魔力を攻撃に変える。SPを1点使用する。' },
+      { name: '防御魔法', cost: 10, stat: '知力', effect: '戦闘で防御判定＋２d。射程１。仲間に対する攻撃を防ぐことができる。魔力を防御に変える。SPを1点使用する。' },
+      { name: '回復魔法', cost: 10, stat: '知力', effect: 'ダメージを（消費したSP＋成功数）点回復することができる。射程１。魔力を回復に変える。SPを1点使用する。' },
+      { name: '支援魔法', cost: 10, stat: '知力', effect: '戦闘で他者の判定＋２d。射程１。魔力を加護に変える。SPを1点使用する。' },
+      { name: '仲間', cost: 10, stat: '魅力', effect: 'あらゆる判定に＋２d。HP５点。いろんな場面で頼れる仲間を連れている。' },
+      { name: '従者', cost: 10, stat: '魅力', effect: '戦闘で判定＋１d。HP８点。戦いの場を代わりに引き受ける従者を連れている。' },
+      { name: '配下', cost: 5, stat: '魅力', effect: 'あらゆる判定に成功数＋１。HP３点。SP1点を消費する。金次第で活躍する配下を連れている。' },
+      { name: '財貨（5点）', cost: 5, stat: '魅力', effect: 'あらゆる判定に＋１dする。使い捨て。いつでも役に立つ現金を持っている。' },
+      { name: '肉体鍛錬', cost: 5, stat: 'ー', effect: '体力、敏捷力の判定成功数＋１。肉体の鍛錬を行い、一般人を逸脱した肉体を持つ。' },
+      { name: '精神鍛錬', cost: 5, stat: 'ー', effect: 'SP＋2点。あなたの精神は通常の人間よりも強い心を持つ。' },
+      { name: '義肢改造', cost: 5, stat: 'ー', effect: 'HP＋４。戦闘判定＋１d。魅力判定−１d。ぱっと見でわかる義肢を持つ。改造されたそれは、一般人から見たら忌避の対象かもしれない。' },
+      { name: 'サイバーウェア', cost: 10, stat: 'ー', effect: 'HP＋６、体力、敏捷力判定＋１d。高性能な義肢を持っている。見た目も変化動作をさせなければ、普通の体と変わらない見た目を持つ。' },
+      { name: 'TS', cost: 5, stat: 'ー', effect: '魅力判定＋１d。あなたは精神と性別が入れ替わっている。怪しい魅力が漂っている。' },
+      { name: 'ピックアップトラック', cost: 10, stat: '敏捷力', effect: '５人乗りの荷台のある車' }
+    ];
+
     // セーブデータを作成
     function buildSaveData() {
+      // コモンパーツの保存データを抽出
+      const commonPartsData = [];
+      document.querySelectorAll('.common-part-select').forEach(sel => {
+        commonPartsData.push(sel.selectedIndex);
+      });
+
       return {
         charName: document.getElementById('char-name').value,
         stats: {
@@ -1510,6 +1591,7 @@
           int: parseInt(document.getElementById('stat-int').value) || 3,
           cha: parseInt(document.getElementById('stat-cha').value) || 3,
         },
+        commonParts: commonPartsData,
         sp: spTotal,
         hpCurrent: hpCurrent,
         hpMax: hpMax,
@@ -2550,6 +2632,8 @@
           });
           updateAllSlotButtons();
         }
+        // コモンパーツスロットの復元は、後でUI生成時に行うためここではスキップします。
+        
         // ランク使用回数
         if (saved.rankUseCounts) {
           rankUseCounts = { ...rankUseCounts, ...saved.rankUseCounts };
@@ -2567,6 +2651,61 @@
         joinRoom(savedRoomId);
       }
       
+      // コモンパーツUIの生成
+      const elPartsList = document.getElementById('common-parts-list');
+      if (elPartsList) {
+        let optionsHtml = '';
+        COMMON_PARTS.forEach((p, idx) => {
+          optionsHtml += `<option value="${idx}" data-cost="${p.cost}">${p.name} (CP:${p.cost})</option>`;
+        });
+
+        for (let i = 0; i < 6; i++) {
+          const div = document.createElement('div');
+          div.className = 'common-part-item';
+          div.innerHTML = `
+            <select class="common-part-select" id="part-sel-${i}" data-prev-idx="0">
+              ${optionsHtml}
+            </select>
+            <div class="common-part-desc" id="part-desc-${i}">効果: なし</div>
+          `;
+          elPartsList.appendChild(div);
+
+          const sel = div.querySelector('select');
+          
+          // 復元処理
+          if (saved && saved.commonParts && saved.commonParts[i] !== undefined) {
+            sel.selectedIndex = saved.commonParts[i];
+            sel.dataset.prevIdx = sel.selectedIndex;
+            updatePartDesc(i);
+          }
+
+          sel.addEventListener('change', (e) => {
+            const target = e.target;
+            const idx = target.selectedIndex;
+            updatePartDesc(i);
+            
+            const remaining = calculateCreationPoints();
+            if (remaining < 0) {
+              // 選択キャンセル
+              target.selectedIndex = target.dataset.prevIdx;
+              updatePartDesc(i);
+              calculateCreationPoints();
+            } else {
+              target.dataset.prevIdx = target.selectedIndex;
+              saveToStorage();
+            }
+          });
+        }
+      }
+
+      function updatePartDesc(i) {
+        const sel = document.getElementById(`part-sel-${i}`);
+        const descDiv = document.getElementById(`part-desc-${i}`);
+        if (!sel || !descDiv) return;
+        const part = COMMON_PARTS[sel.selectedIndex];
+        descDiv.innerHTML = `使用能力値: <strong style="color:var(--accent-cyan);">${part.stat}</strong> / 効果: ${part.effect}`;
+      }
+
       // 初回・復元後に作成ポイントを再計算
       calculateCreationPoints();
     })();
@@ -2586,12 +2725,19 @@
         totalSpent += (val - STAT_BASE_VALUE) * POINT_COST_PER_STAT;
       });
 
+      // コモンパーツの消費分を加算
+      const partSelects = document.querySelectorAll('.common-part-select');
+      partSelects.forEach(sel => {
+        const itemCost = parseInt(sel.options[sel.selectedIndex]?.dataset.cost) || 0;
+        totalSpent += itemCost;
+      });
+
       let remaining = MAX_CREATION_POINTS - totalSpent;
       const elPoints = document.getElementById('creation-points');
       
       if (elPoints) {
         elPoints.textContent = `残り作成ポイント: ${remaining}`;
-        elPoints.style.color = remaining <= 0 ? 'var(--fail-red)' : 'var(--accent-cyan)';
+        elPoints.style.color = remaining < 0 ? 'var(--fail-red)' : 'var(--accent-cyan)';
       }
       return remaining;
     }
