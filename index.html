@@ -1446,7 +1446,7 @@
     <div class="card">
       <div class="card-title">📜 履歴・チャット</div>
       <div class="chat-input-area">
-        <input type="text" class="chat-input" id="chat-input" placeholder="メッセージを入力（Enterで送信）">
+        <input type="text" class="chat-input" id="chat-input" placeholder="メッセージを入力（Enter2回で送信）">
         <button class="btn-chat-send" id="btn-chat-send">送信</button>
       </div>
       <ul class="history-list" id="history-list">
@@ -1975,11 +1975,28 @@
       elChatInput.value = '';
     }
 
+    let enterTimeout = null;
+    let isEnterWaiting = false;
+
     elBtnChatSend.addEventListener('click', sendChatMessage);
     elChatInput.addEventListener('keydown', (e) => {
       // IME変換中のEnterを無視するため keyCode のチェックが必要な場合があるが、通常は isComposing で弾く
       if (e.key === 'Enter' && !e.isComposing) {
-        sendChatMessage();
+        if (isEnterWaiting) {
+          // 2回目のEnter
+          clearTimeout(enterTimeout);
+          isEnterWaiting = false;
+          elChatInput.placeholder = 'メッセージを入力（Enter2回で送信）';
+          sendChatMessage();
+        } else {
+          // 1回目のEnter
+          isEnterWaiting = true;
+          elChatInput.placeholder = 'もう一度Enterで送信します';
+          enterTimeout = setTimeout(() => {
+            isEnterWaiting = false;
+            elChatInput.placeholder = 'メッセージを入力（Enter2回で送信）';
+          }, 1500); // 1.5秒間の猶予
+        }
       }
     });
 
