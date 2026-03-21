@@ -1427,6 +1427,7 @@
     let skillSlots = []; // { id, name, rank, used }
     let slotIdCounter = 0;
     let activeBonus = 0; // 現在適用中のチートボーナス合計
+    let lastRollData = null; // 直前のダイスロール情報（後乗せボーナス用）
 
     // === localStorage保存キー ===
     const SAVE_KEY = 'isekaiTRPG_saveData';
@@ -1594,7 +1595,14 @@
         if (data && data.sessionId !== localSessionId) {
           // 他人が振ったダイス結果をUIに反映
           rollNumber++;
-          addHistoryItem(rollNumber, data.results, data.spGained, data.bonus, data.finalSuccess, data.charName);
+          addHistoryItem(rollNumber, data.results, data.spGained, data.bonus, data.finalSuccess, data.charName, snap.key);
+        }
+      });
+      // 既存のロール結果が後からチートスキルによって書き換えられた場合の受信
+      firebaseRef.limitToLast(20).on('child_changed', (snap) => {
+        const data = snap.val();
+        if (data && data.sessionId !== localSessionId) {
+          updateHistoryItem(snap.key, data);
         }
       });
     }
@@ -1602,6 +1610,7 @@
     function disconnectRoom() {
       if (firebaseListener && firebaseRef) {
         firebaseRef.off('child_added', firebaseListener);
+        firebaseRef.off('child_changed');
       }
       currentRoomId = null;
       firebaseRef = null;
@@ -1694,8 +1703,9 @@
 
       // 履歴に追加 (Firebase共有 + ローカルUI反映)
       const charName = document.getElementById('char-name').value || '名無し';
+      let newRef = null;
       if (currentRoomId && firebaseRef) {
-        firebaseRef.push({
+        newRef = firebaseRef.push({
           sessionId: localSessionId,
           charName: charName,
           results: results,
@@ -1705,8 +1715,22 @@
           timestamp: firebase.database.ServerValue.TIMESTAMP
         });
       }
+      
+      const firebaseKey = newRef ? newRef.key : '';
+      lastRollData = {
+        firebaseKey: firebaseKey,
+        isStatRoll: false,
+        results: [...results],
+        successCount: successCount,
+        failCount: failCount,
+        spGained: spGained,
+        bonus: totalBonus,
+        finalSuccess: finalSuccess,
+        charName: charName
+      };
+
       rollNumber++;
-      addHistoryItem(rollNumber, results, spGained, totalBonus, finalSuccess, charName);
+      addHistoryItem(rollNumber, results, spGained, totalBonus, finalSuccess, charName, firebaseKey);
 
       // ロール後にアクティブスキルを自動リセット（1ロール限定効果）
       resetActiveSkills();
@@ -1788,9 +1812,11 @@
     }
 
     // === 履歴の追加 ===
-    function addHistoryItem(num, results, spGained, bonus, finalSuccess, charName = '') {
+    function addHistoryItem(num, results, spGained, bonus, finalSuccess, charName = '', firebaseKey = '') {
       const li = document.createElement('li');
       li.className = 'history-item';
+      li.id = firebaseKey ? `history-item-${firebaseKey}` : `history-item-local-${num}`;
+      
       let diceHtml = '';
       results.forEach(val => {
         let cls = val >= 4 ? 'success' : 'fail';
@@ -1813,6 +1839,39 @@
         <span class="history-sp">${spText}</span>
       `;
       elHistoryList.insertBefore(li, elHistoryList.firstChild);
+    }
+
+    // === 履歴の更新（チート後乗せ用） ===
+    function updateHistoryItem(firebaseKey, data) {
+      if (!firebaseKey) return;
+      const li = document.getElementById(`history-item-${firebaseKey}`);
+      if (!li) return;
+      
+      let diceHtml = '';
+      data.results.forEach(val => {
+        let cls = val >= 4 ? 'success' : 'fail';
+        if (val === 1) cls = 'sp-trigger';
+        diceHtml += `<span class="history-die ${cls}">${val}</span>`;
+      });
+      
+      // チートボーナス分の確定成功ダイスを履歴に追加
+      for (let i = 0; i < data.bonus; i++) {
+        diceHtml += `<span class="history-die success" style="border-color: var(--accent-purple); color: var(--accent-purple); background: rgba(179,136,255,0.15);">★</span>`;
+      }
+      
+      const spText = data.spGained > 0 ? `SP+${data.spGained}` : '';
+      const bonusText = data.bonus > 0 ? `<span style="color:var(--accent-purple);font-size:0.65rem;margin-left:4px;">+${data.bonus}</span>` : '';
+      const nameText = data.charName ? `<span style="font-size:0.75rem; color:var(--text-secondary); margin-right:8px; min-width:60px; max-width:100px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${data.charName}</span>` : '';
+      
+      const numSpan = li.querySelector('.history-number');
+      const numHtml = numSpan ? numSpan.outerHTML : '';
+
+      li.innerHTML = `
+        ${nameText}
+        ${numHtml}
+        <div class="history-dice">${diceHtml}${bonusText}</div>
+        <span class="history-sp">${spText}</span>
+      `;
     }
 
     // === SPリセット ===
@@ -1957,6 +2016,65 @@
         return;
       }
 
+      // === 直前のロールへの後乗せ処理 ===
+      if (lastRollData) {
+        // SP消費
+        if (actualCost > 0) spTotal -= actualCost;
+        elSpTotal.textContent = spTotal;
+
+        slot.used = true;
+        rankUseCounts[rank]++;
+
+        // lastRollData のボーナスを加算
+        lastRollData.bonus += bonus;
+        lastRollData.finalSuccess += bonus;
+
+        // メイン画面の再描画
+        if (lastRollData.isStatRoll) {
+          renderStatResult(lastRollData.statKey, lastRollData.diceNum, lastRollData.results, lastRollData.successCount, lastRollData.failCount, lastRollData.spGained, lastRollData.bonus, lastRollData.finalSuccess);
+        } else {
+          renderResults(lastRollData.results, lastRollData.successCount, lastRollData.failCount, lastRollData.spGained, lastRollData.bonus, lastRollData.finalSuccess);
+        }
+
+        // Firebaseの更新 (これで他の人の画面でも child_changed が発火して履歴が更新される)
+        if (lastRollData.firebaseKey && currentRoomId && firebaseRef) {
+          firebaseRef.child(lastRollData.firebaseKey).update({
+            bonus: lastRollData.bonus,
+            finalSuccess: lastRollData.finalSuccess
+          });
+        }
+        
+        // 自分のローカル履歴も直接更新
+        const localLiId = lastRollData.firebaseKey ? lastRollData.firebaseKey : `local-${rollNumber}`;
+        updateHistoryItem(localLiId, lastRollData);
+
+        // UI更新（使用済みにする）
+        const btn = document.querySelector(`[data-use-id="${slotId}"]`);
+        btn.classList.add('used');
+        const costText = actualCost === 0 ? '無料' : `-${actualCost}SP`;
+        btn.textContent = `✓ 適用済（直前のロールに+${bonus}しました）`;
+
+        const slotEl = document.getElementById(`slot-${slotId}`);
+        slotEl.classList.add('active-skill');
+        
+        // 入力を一時無効化
+        const nameInput = document.querySelector(`[data-name-id="${slotId}"]`);
+        const rankSelect = document.querySelector(`[data-rank-id="${slotId}"]`);
+        nameInput.disabled = true;
+        rankSelect.disabled = true;
+
+        // 使用ログ
+        addCheatLog(name, rank, actualCost, bonus);
+
+        // 他スロットのコスト表示も更新（無料枠が減った可能性）
+        skillSlots.forEach(s => { if (!s.used) updateSlotCostDisplay(s.id); });
+        updateAllSlotButtons();
+
+        saveToStorage();
+        return; // 後乗せ完了のため、未来のロール用 activeBonus には加算せずに終了
+      }
+
+      // === 直前のロールがない場合：次のロールへ適用 ===
       // 先にスロットを使用済みにする（コスト判定に影響するため）
       slot.used = true;
       activeBonus += bonus;
@@ -2159,8 +2277,10 @@
         // 履歴にも追加 (Firebase共有 + ローカルUI反映)
         const charName = document.getElementById('char-name').value || '名無し';
         const displayCharName = `${charName}(${STAT_NAMES[key]})`;
+        
+        let newRef = null;
         if (currentRoomId && firebaseRef) {
-          firebaseRef.push({
+          newRef = firebaseRef.push({
             sessionId: localSessionId,
             charName: displayCharName,
             results: results,
@@ -2170,8 +2290,24 @@
             timestamp: firebase.database.ServerValue.TIMESTAMP
           });
         }
+        
+        const firebaseKey = newRef ? newRef.key : '';
+        lastRollData = {
+          firebaseKey: firebaseKey,
+          isStatRoll: true,
+          statKey: key,
+          diceNum: diceNum,
+          results: [...results],
+          successCount: successCount,
+          failCount: failCount,
+          spGained: spGained,
+          bonus: totalBonus,
+          finalSuccess: finalSuccess,
+          charName: displayCharName
+        };
+
         rollNumber++;
-        addHistoryItem(rollNumber, results, spGained, totalBonus, finalSuccess, displayCharName);
+        addHistoryItem(rollNumber, results, spGained, totalBonus, finalSuccess, displayCharName, firebaseKey);
       });
     });
 
