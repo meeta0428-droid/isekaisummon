@@ -2526,7 +2526,7 @@
       btn.addEventListener('click', () => {
         const key = btn.dataset.statKey;
         const input = document.getElementById(`stat-${key}`);
-        const diceNum = parseInt(input.value) || 0;
+        const diceNum = parseInt(input.dataset.val) || 0;
         if (diceNum <= 0) return;
 
         // ボタンアニメーション
