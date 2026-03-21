@@ -1565,12 +1565,13 @@
     let activeBonus = 0; // 現在適用中のチートボーナス合計
     let lastRollData = null; // 直前のダイスロール情報（後乗せボーナス用）
 
-    // === キャラクター作成ポイント関連 ===
-    const MAX_CREATION_POINTS = 100;
+    // === 定数定義（能力値・作成ポイント） ===
     const STAT_BASE_VALUE = 3;
     const STAT_MAX_VALUE = 10;
     const POINT_COST_PER_STAT = 10;
-
+    const MAX_CREATION_POINTS = 100;
+    const MAX_CHEAT_POINTS = 3;
+    const UPGRADE_COST = { B: 0, A: 20, S: 50, SS: 90, SSS: 150 };
     // === localStorage保存キー ===
     const SAVE_KEY = 'isekaiTRPG_saveData';
 
@@ -2681,7 +2682,7 @@
           renderHp();
         } else {
           // 保存データなし：体力から計算
-          const hpStat = parseInt(document.getElementById('stat-hp').value) || 3;
+          const hpStat = parseInt(document.getElementById('stat-hp').dataset.val) || 3;
           updateHpFromStat(hpStat);
         }
         // チートスキルスロット
