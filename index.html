@@ -2892,6 +2892,58 @@
         elPoints.textContent = `残り作成ポイント: ${cpRemaining}`;
         elPoints.style.color = cpRemaining < 0 ? 'var(--fail-red)' : 'var(--accent-cyan)';
       }
+
+      // --- チートスキルのオプションを残りポイントに応じて無効化 ---
+      const rankOrder = { none: 0, B: 1, A: 2, S: 3, SS: 4, SSS: 5 };
+      skillSlots.forEach(slot => {
+        const bSel = document.querySelector(`[data-base-rank-id="${slot.id}"]`);
+        const fSel = document.querySelector(`[data-rank-id="${slot.id}"]`);
+        if (!bSel || !fSel) return;
+
+        const currentB = bSel.value;
+        const currentF = fSel.value;
+        const currentBaseCost = parseInt(bSel.options[bSel.selectedIndex]?.dataset.cost) || 0;
+        
+        let currentUpgradeCost = 0;
+        if (currentB !== 'none' && UPGRADE_COST[currentB] !== undefined && UPGRADE_COST[currentF] !== undefined) {
+          currentUpgradeCost = UPGRADE_COST[currentF] - UPGRADE_COST[currentB];
+          if (currentUpgradeCost < 0) currentUpgradeCost = 0;
+        }
+
+        // 取得ランク(チートPt)の選択可否
+        Array.from(bSel.options).forEach(opt => {
+          if (opt.value === currentB) {
+            opt.disabled = false;
+          } else {
+            const optCost = parseInt(opt.dataset.cost) || 0;
+            const additionalCost = optCost - currentBaseCost;
+            opt.disabled = (additionalCost > chpRemaining);
+          }
+        });
+
+        // 強化ランク(作成Pt)の選択可否
+        Array.from(fSel.options).forEach(opt => {
+          const optRank = opt.value;
+          if (currentB === 'none') {
+            opt.disabled = true; // ベース未取得なら全無効
+            return;
+          }
+          if (rankOrder[optRank] < rankOrder[currentB]) {
+            opt.disabled = true; // 取得ランクより下は不可
+            return;
+          }
+          if (optRank === currentF) {
+            opt.disabled = false; // 選択中は有効
+            return;
+          }
+          
+          let newUpgradeCost = UPGRADE_COST[optRank] - UPGRADE_COST[currentB];
+          if (newUpgradeCost < 0) newUpgradeCost = 0;
+          const additionalCpCost = newUpgradeCost - currentUpgradeCost;
+          
+          opt.disabled = (additionalCpCost > cpRemaining);
+        });
+      });
       
       return { cp: cpRemaining, chp: chpRemaining };
     }
