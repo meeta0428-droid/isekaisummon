@@ -1486,6 +1486,33 @@
         <span id="cheat-points-display" style="color: var(--accent-purple); font-size: 0.8rem;">残りチートPt: 3</span>
       </div>
 
+      <!-- チートスキル名のサジェスト -->
+      <datalist id="cheat-skill-list">
+        <option value="炎"></option>
+        <option value="水"></option>
+        <option value="氷"></option>
+        <option value="風"></option>
+        <option value="土"></option>
+        <option value="光"></option>
+        <option value="闇"></option>
+        <option value="模倣"></option>
+        <option value="奪取"></option>
+        <option value="錬成"></option>
+        <option value="武技"></option>
+        <option value="異形"></option>
+        <option value="成長"></option>
+        <option value="回復"></option>
+        <option value="ループ"></option>
+        <option value="転移"></option>
+        <option value="鑑定"></option>
+        <option value="無限倉庫"></option>
+        <option value="前世知識"></option>
+        <option value="電気"></option>
+        <option value="機械"></option>
+        <option value="生活"></option>
+        <option value="言語"></option>
+      </datalist>
+
       <!-- ランク効果一覧 -->
       <div class="rank-cost-table">
         <div class="rank-cost-item"><div class="rank-name">SSS</div><div class="rank-effect">+10</div><div class="rank-sp">SP 3</div></div>
@@ -2147,7 +2174,7 @@
           <div class="skill-slot-row">
             <div class="skill-slot-field">
               <label>スキル名称</label>
-              <input type="text" class="skill-slot-input" data-name-id="${slotId}" placeholder="スキル名を入力">
+              <input type="text" class="skill-slot-input" data-name-id="${slotId}" placeholder="スキル名を入力" list="cheat-skill-list">
             </div>
             <div class="skill-slot-field rank-f" style="display: flex; gap: 8px;">
               <div style="flex: 1;">
