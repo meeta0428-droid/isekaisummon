@@ -1345,9 +1345,13 @@
 
     <!-- キャラクター情報 -->
     <div class="card">
-      <div class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
+      <div class="card-title" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
         <span>👤 キャラクター情報</span>
         <span id="creation-points" style="color: var(--accent-cyan); font-size: 0.8rem;">残り作成ポイント: 100</span>
+      </div>
+      <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 12px; font-size: 0.8rem;">
+        <label for="extra-creation-points" style="margin-right: 8px; color: var(--text-secondary);">追加作成ポイント</label>
+        <input type="number" id="extra-creation-points" value="0" min="0" style="width: 60px; padding: 4px; border-radius: 4px; border: 1px solid var(--surface-light); background: rgba(0,0,0,0.2); color: var(--text-primary); text-align: right;">
       </div>
       <div class="char-name-group">
         <label class="char-name-label">キャラクター名</label>
@@ -1650,6 +1654,7 @@
         sp: spTotal,
         hpCurrent: hpCurrent,
         hpMax: hpMax,
+        extraCreationPoints: parseInt(document.getElementById('extra-creation-points').value) || 0,
         cheatSlots: skillSlots.map(s => ({ name: s.name, baseRank: s.baseRank, rank: s.rank, used: s.used })),
         activeBonus: activeBonus,
         rankUseCounts: rankUseCounts,
@@ -2746,6 +2751,12 @@
         }
         // コモンパーツスロットの復元は、後でUI生成時に行うためここではスキップします。
         
+        // 追加作成ポイントの復元
+        if (saved.extraCreationPoints !== undefined) {
+          const elExtraCp = document.getElementById('extra-creation-points');
+          if (elExtraCp) elExtraCp.value = saved.extraCreationPoints;
+        }
+
         // ランク使用回数
         if (saved.rankUseCounts) {
           rankUseCounts = { ...rankUseCounts, ...saved.rankUseCounts };
@@ -2813,6 +2824,15 @@
 
       // 初回・復元後に作成ポイントを再計算
       calculateCreationPoints();
+
+      // 追加作成ポイントのイベントリスナー
+      const elExtraCp = document.getElementById('extra-creation-points');
+      if (elExtraCp) {
+        elExtraCp.addEventListener('input', () => {
+          calculateCreationPoints();
+          saveToStorage();
+        });
+      }
     })();
 
     // 作成ポイントとチートポイントの計算処理
@@ -2864,7 +2884,9 @@
         }
       });
 
-      const cpRemaining = MAX_CREATION_POINTS - totalSpent;
+      const extraCpInput = document.getElementById('extra-creation-points');
+      const extraCp = extraCpInput ? parseInt(extraCpInput.value) || 0 : 0;
+      const cpRemaining = MAX_CREATION_POINTS + extraCp - totalSpent;
       const elPoints = document.getElementById('creation-points');
       if (elPoints) {
         elPoints.textContent = `残り作成ポイント: ${cpRemaining}`;
