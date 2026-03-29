@@ -1849,17 +1849,14 @@
     const RANK_FREE_USES_CUMULATIVE = { SSS: 0, SS: 0, S: 0, A: 3, B: 0 };
     let rankUseCounts = { SSS: 0, SS: 0, S: 0, A: 0, B: 0 };
 
-    // 実際のSPコストを計算
+    // 実際のSPコストを計算（自動での無料化はBランクのみ）
     function getActualCost(rank) {
       // Bランク: 同ラウンドで既にアクティブなBスキルが0なら無料
       if (rank === 'B') {
         const activeBCount = skillSlots.filter(s => s.used && s.rank === 'B').length;
         return activeBCount === 0 ? 0 : RANK_COSTS[rank];
       }
-      // A～SSSランク: 累計無料枠
-      const freeLimit = RANK_FREE_USES_CUMULATIVE[rank];
-      if (freeLimit > 0 && rankUseCounts[rank] < freeLimit) return 0;
-      return RANK_COSTS[rank];
+      return RANK_COSTS[rank]; // それ以外は基本コストを返す
     }
 
     // === DOM要素 ===
@@ -1970,8 +1967,13 @@
         const btn = document.querySelector(`[data-use-id="${slot.id}"]`);
         if (btn) {
           btn.classList.remove('used');
-          btn.textContent = '⚡ スキル使用';
+          btn.textContent = '⚡ SP消費で使用';
           btn.disabled = false;
+        }
+        // 無料ボタンも非表示状態から復元（必要なら updateAllSlotButtons 等で表示される）
+        const btnFree = document.querySelector(`[data-use-free-id="${slot.id}"]`);
+        if (btnFree) {
+          btnFree.disabled = false;
         }
         const slotEl = document.getElementById(`slot-${slot.id}`);
         if (slotEl) slotEl.classList.remove('active-skill');
@@ -2208,7 +2210,10 @@
             <span class="skill-slot-bonus" data-bonus-id="${slotId}">効果: 成功ダイス +10</span>
             <span class="skill-slot-cost" data-cost-id="${slotId}">消費: SP 3</span>
           </div>
-          <button class="skill-use-btn" data-use-id="${slotId}">⚡ スキル使用</button>
+          <div style="display: flex; gap: 8px;">
+            <button class="skill-use-btn" data-use-id="${slotId}" style="flex: 1;">⚡ SP消費で使用</button>
+            <button class="skill-use-btn skill-slot-use-free" data-use-free-id="${slotId}" style="flex: 1; display: none; background: var(--success-green); color: #fff;">🎁 無料枠を使用</button>
+          </div>
         </div>
       `;
     }
@@ -2251,21 +2256,36 @@
       const actual = getActualCost(rank);
       const costEl = document.querySelector(`[data-cost-id="${slotId}"]`);
       
+      const btnUse = document.querySelector(`[data-use-id="${slotId}"]`);
+      const btnFree = document.querySelector(`[data-use-free-id="${slotId}"]`);
+      
       let remainingText = '';
-      if (rank === 'A') {
-        const freeLimit = RANK_FREE_USES_CUMULATIVE[rank];
-        if (freeLimit > 0) {
-          const remaining = Math.max(0, freeLimit - (rankUseCounts[rank] || 0));
-          remainingText = ` (残り無料: ${remaining}回)`;
-        }
+      let hasFreeUse = false;
+
+      const freeLimit = RANK_FREE_USES_CUMULATIVE[rank];
+      if (freeLimit > 0) {
+        const remaining = Math.max(0, freeLimit - (rankUseCounts[rank] || 0));
+        remainingText = ` (残り無料: ${remaining}回)`;
+        hasFreeUse = (remaining > 0);
       }
 
       if (actual === 0) {
+        // Bランク等で消費SP自体が0の場合
         costEl.textContent = `消費: 無料${remainingText}`;
         costEl.style.color = 'var(--success-green)';
       } else {
         costEl.textContent = `消費: SP ${actual}${remainingText}`;
         costEl.style.color = '';
+      }
+
+      if (btnFree) {
+        // 無料枠がある場合のみボタンを表示
+        if (hasFreeUse) {
+          btnFree.style.display = 'block';
+          btnFree.disabled = false;
+        } else {
+          btnFree.style.display = 'none';
+        }
       }
     }
 
@@ -2326,19 +2346,30 @@
         removeSlot(slotId);
       });
 
-      // 使用ボタン
+      // 使用ボタン (SP消費)
       document.querySelector(`[data-use-id="${slotId}"]`).addEventListener('click', () => {
-        useSkill(slotId);
+        useSkill(slotId, false);
       });
+
+      // 無料使用ボタン
+      const btnFree = document.querySelector(`[data-use-free-id="${slotId}"]`);
+      if (btnFree) {
+        btnFree.addEventListener('click', () => {
+          useSkill(slotId, true);
+        });
+      }
     }
 
-    function useSkill(slotId) {
+    function useSkill(slotId, isFree = false) {
       const slot = skillSlots.find(s => s.id === slotId);
       if (!slot || slot.used) return;
 
       const name = slot.name || '（名称未入力）';
       const rank = slot.rank;
-      const actualCost = getActualCost(rank);
+      // isFreeがtrue、または本来のコストが0(Bランクの初回など)なら無料
+      let actualCost = getActualCost(rank);
+      if (isFree) actualCost = 0;
+      
       const bonus = RANK_BONUS[rank];
 
       if (spTotal < actualCost) {
@@ -2354,7 +2385,11 @@
         elSpTotal.textContent = spTotal;
 
         slot.used = true;
-        rankUseCounts[rank]++;
+        
+        // 無料枠を使用した場合は回数を消費。SPを払った場合は消費しない
+        if (isFree && RANK_FREE_USES_CUMULATIVE[rank] > 0) {
+          rankUseCounts[rank]++;
+        }
 
         // lastRollData のボーナスを加算
         lastRollData.bonus += bonus;
@@ -2384,6 +2419,11 @@
         btn.classList.add('used');
         const costText = actualCost === 0 ? '無料' : `-${actualCost}SP`;
         btn.textContent = `✓ 適用済（直前のロールに+${bonus}しました）`;
+        
+        const btnFree = document.querySelector(`[data-use-free-id="${slotId}"]`);
+        if (btnFree) {
+          btnFree.style.display = 'none';
+        }
 
         const slotEl = document.getElementById(`slot-${slotId}`);
         slotEl.classList.add('active-skill');
@@ -2409,7 +2449,9 @@
       // 先にスロットを使用済みにする（コスト判定に影響するため）
       slot.used = true;
       activeBonus += bonus;
-      rankUseCounts[rank]++;
+      if (isFree && RANK_FREE_USES_CUMULATIVE[rank] > 0) {
+        rankUseCounts[rank]++;
+      }
 
       // SP消費（無料の場合は0）
       if (actualCost > 0) {
@@ -2423,6 +2465,11 @@
       btn.classList.add('used');
       const costText = actualCost === 0 ? '無料' : `-${actualCost}SP`;
       btn.textContent = `✓ 発動中（成功+${bonus}）次のロールに適用`;
+      
+      const btnFree = document.querySelector(`[data-use-free-id="${slotId}"]`);
+      if (btnFree) {
+        btnFree.style.display = 'none';
+      }
 
       const slotEl = document.getElementById(`slot-${slotId}`);
       slotEl.classList.add('active-skill');
