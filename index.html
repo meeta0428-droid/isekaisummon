@@ -1960,7 +1960,7 @@
     // === ロール後にアクティブスキルをリセット ===
     function resetActiveSkills() {
       activeBonus = 0;
-      rankUseCounts = { SSS: 0, SS: 0, S: 0, A: 0, B: 0 }; // 毎ロールごとに使用回数をリセット
+      // 注意: rankUseCountsはここでリセットしない（セッション全体での無料回数を管理するため）
       skillSlots.forEach(slot => {
         if (!slot.used) return;
         slot.used = false;
@@ -2156,10 +2156,15 @@
 
     // === SPリセット ===
     elBtnSpReset.addEventListener('click', () => {
-      if (confirm('SPをリセットしますか？')) {
-        spTotal = 0;
-        elSpTotal.textContent = '0';
+      const intVal = parseInt(document.getElementById('stat-int').dataset.val) || 3;
+      if (confirm(`SPを知力値（${intVal}）にリセットしますか？`)) {
+        spTotal = intVal;
+        elSpTotal.textContent = spTotal;
+        // 無料使用回数もリセット
+        rankUseCounts = { SSS: 0, SS: 0, S: 0, A: 0, B: 0 };
         updateAllSlotButtons();
+        skillSlots.forEach(s => { if (!s.used) updateSlotCostDisplay(s.id); });
+        saveToStorage();
       }
     });
 
