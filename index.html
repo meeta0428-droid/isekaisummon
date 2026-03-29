@@ -2249,11 +2249,21 @@
       const rank = slot.rank;
       const actual = getActualCost(rank);
       const costEl = document.querySelector(`[data-cost-id="${slotId}"]`);
+      
+      let remainingText = '';
+      if (rank === 'A') {
+        const freeLimit = RANK_FREE_USES_CUMULATIVE[rank];
+        if (freeLimit > 0) {
+          const remaining = Math.max(0, freeLimit - (rankUseCounts[rank] || 0));
+          remainingText = ` (残り無料: ${remaining}回)`;
+        }
+      }
+
       if (actual === 0) {
-        costEl.textContent = `消費: 無料`;
+        costEl.textContent = `消費: 無料${remainingText}`;
         costEl.style.color = 'var(--success-green)';
       } else {
-        costEl.textContent = `消費: SP ${actual}`;
+        costEl.textContent = `消費: SP ${actual}${remainingText}`;
         costEl.style.color = '';
       }
     }
