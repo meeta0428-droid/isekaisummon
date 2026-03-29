@@ -1963,6 +1963,7 @@
     // === ロール後にアクティブスキルをリセット ===
     function resetActiveSkills() {
       activeBonus = 0;
+      rankUseCounts = { SSS: 0, SS: 0, S: 0, A: 0, B: 0 }; // 毎ロールごとに使用回数をリセット
       skillSlots.forEach(slot => {
         if (!slot.used) return;
         slot.used = false;
