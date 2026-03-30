@@ -1468,7 +1468,11 @@
           <div class="sp-icon">⚡</div>
           <div>
             <div class="sp-label">スペシャルポイント</div>
-            <div class="sp-value" id="sp-total">0</div>
+            <div style="display: flex; align-items: center; gap: 12px; margin-top: 4px;">
+              <button class="stat-btn minus" id="btn-sp-minus" style="width: 36px; height: 36px;">-</button>
+              <div class="sp-value" id="sp-total" style="min-width: 48px; text-align: center;">0</div>
+              <button class="stat-btn plus" id="btn-sp-plus" style="width: 36px; height: 36px;">+</button>
+            </div>
           </div>
         </div>
         <button class="sp-reset-btn" id="btn-sp-reset">リセット</button>
@@ -2152,6 +2156,24 @@
           }, 1500); // 1.5秒間の猶予
         }
       }
+    });
+
+    // === SP手動増減 ===
+    const btnSpMinus = document.getElementById('btn-sp-minus');
+    const btnSpPlus = document.getElementById('btn-sp-plus');
+
+    btnSpMinus.addEventListener('click', () => {
+      spTotal--;
+      elSpTotal.textContent = spTotal;
+      updateAllSlotButtons();
+      saveToStorage();
+    });
+
+    btnSpPlus.addEventListener('click', () => {
+      spTotal++;
+      elSpTotal.textContent = spTotal;
+      updateAllSlotButtons();
+      saveToStorage();
     });
 
     // === SPリセット ===
