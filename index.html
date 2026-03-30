@@ -3068,6 +3068,17 @@
         const rollBtn = document.querySelector(`[data-stat-key="${key}"]`);
         if (rollBtn) rollBtn.disabled = val <= 0;
         
+        // 知力変更時はSPを知力と等しくする（必要に応じて上書き）
+        if (key === 'int') {
+          spTotal = val;
+          elSpTotal.textContent = spTotal;
+        }
+
+        // 体力変更時はHPを再計算
+        if (key === 'hp') {
+          updateHpFromStat(val);
+        }
+        
         saveToStorage();
       });
     });
