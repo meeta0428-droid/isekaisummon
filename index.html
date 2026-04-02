@@ -3564,13 +3564,6 @@
         updateHpFromStat(hpStat);
       }
 
-      // 前回接続していたルームに自動再接続
-      const savedRoomId = localStorage.getItem('isekaiTRPG_roomId');
-      if (savedRoomId) {
-        elRoomInput.value = savedRoomId;
-        joinRoom(savedRoomId);
-      }
-
       // コモンパーツUIの生成
       const elPartsList = document.getElementById('common-parts-list');
       if (elPartsList) {
@@ -3674,6 +3667,13 @@
           calculateCreationPoints();
           saveToStorage();
         });
+      }
+
+      // 前回接続していたルームに自動再接続（DOM生成後にルームへの連携を行う）
+      const savedRoomId = localStorage.getItem('isekaiTRPG_roomId');
+      if (savedRoomId) {
+        elRoomInput.value = savedRoomId;
+        joinRoom(savedRoomId);
       }
     })();
 
