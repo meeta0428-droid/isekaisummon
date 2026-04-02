@@ -2021,6 +2021,7 @@
     // === 状態管理 ===
     let diceCount = 2;
     let spTotal = 3; // 初期値は知力と同じ（デフォルト3）
+    let spMax = 3;
     let rollNumber = 0;
     let skillSlots = []; // { id, name, rank, used }
     let slotIdCounter = 0;
@@ -2087,6 +2088,7 @@
         commonParts: commonPartsData,
         commonPartsActive: commonPartsActive,
         sp: spTotal,
+        spMax: spMax,
         hpCurrent: hpCurrent,
         hpMax: hpMax,
         partsHpCurrent: partsHpCurrent,
@@ -2159,6 +2161,9 @@
       if (saved.sp !== undefined) {
         spTotal = saved.sp;
         updateSpDisplay(); // updateSpDisplay calls elSpTotal.textContent = spTotal;
+      }
+      if (saved.spMax !== undefined) {
+        spMax = saved.spMax;
       }
       if (saved.hpMax !== undefined && saved.hpCurrent !== undefined) {
         hpMax = saved.hpMax;
@@ -3105,10 +3110,9 @@
         const btn = document.querySelector(`[data-stat-key="${key}"]`);
         btn.disabled = val <= 0;
 
-        // 知力変更時はSPの初期値を知力と等しくする
+        // 知力変更時はSP最大値を再計算（コモンパーツ加算込み）
         if (key === 'int') {
-          spTotal = val;
-          elSpTotal.textContent = spTotal;
+          updateSpFromStat(val);
         }
 
         // 体力変更時はHPを再計算
@@ -3222,25 +3226,36 @@
       renderHp();
     }
 
+    // 知力からSP最大値を計算して反映（コモンパーツ補正込み）
+    function updateSpFromStat(statVal) {
+      const mods = getCommonPartsModifiers();
+      const oldMax = spMax;
+      spMax = statVal + mods.sp;
+      
+      spTotal = Math.max(0, spTotal + (spMax - oldMax));
+      if (spTotal > spMax) spTotal = spMax;
+      elSpTotal.textContent = spTotal;
+    }
+
     // コモンパーツ変更時のHP/SP再計算
     function recalcFromCommonParts() {
       const mods = getCommonPartsModifiers();
       const hpStat = parseInt(document.getElementById('stat-hp').dataset.val) || 3;
       const intStat = parseInt(document.getElementById('stat-int').dataset.val) || 3;
       
-      const oldMax = hpMax;
+      const oldHpMax = hpMax;
       hpMax = hpStat * 2 + 10 + mods.hp;
-      console.log(`[recalcFromCommonParts] 体力=${hpStat}, mods.hp=${mods.hp}, oldMax=${oldMax}, hpMax=${hpMax}`);
       
       // HPの差分を現在HPにも反映（ただし上限を超えない）
-      hpCurrent = Math.max(0, hpCurrent + (hpMax - oldMax));
+      hpCurrent = Math.max(0, hpCurrent + (hpMax - oldHpMax));
       if (hpCurrent > hpMax) hpCurrent = hpMax;
       renderHp();
       
-      // SPの切り下げ処理
-      const spMax = intStat + mods.sp;
+      // SPの差分を現在SPにも反映
+      const oldSpMax = spMax;
+      spMax = intStat + mods.sp;
+      spTotal = Math.max(0, spTotal + (spMax - oldSpMax));
       if (spTotal > spMax) spTotal = spMax;
-      if (spTotal < 0) spTotal = 0;
       elSpTotal.textContent = spTotal;
     }
 
@@ -3499,6 +3514,9 @@
         if (saved.sp !== undefined) {
           spTotal = saved.sp;
           elSpTotal.textContent = spTotal;
+        }
+        if (saved.spMax !== undefined) {
+          spMax = saved.spMax;
         }
         // HP
         if (saved.hpMax !== undefined && saved.hpCurrent !== undefined) {
