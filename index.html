@@ -3508,6 +3508,12 @@
           const hpStat = parseInt(document.getElementById('stat-hp').dataset.val) || 3;
           updateHpFromStat(hpStat);
         }
+        // SubCharacter HP
+        if (saved.partsHpCurrent !== undefined && Array.isArray(saved.partsHpCurrent)) {
+          for (let i = 0; i < 6; i++) {
+             partsHpCurrent[i] = saved.partsHpCurrent[i] || 0;
+          }
+        }
         // チートスキルスロット
         if (saved.cheatSlots && saved.cheatSlots.length > 0) {
           // 初期スロットは既に追加済みなので削除してから復元
@@ -3612,6 +3618,15 @@
             const idx = target.selectedIndex;
             if (String(idx) === target.dataset.prevIdx) return;
             console.log(`[コモンパーツ] スロット${i}: ${COMMON_PARTS[idx].name} 選択 (idx=${idx})`);
+            
+            // パーツが変更されたら、もしHPを持つパーツならHPをMAX値にリセット
+            const part = COMMON_PARTS[idx];
+            if (part && part.partHpMax) {
+              partsHpCurrent[i] = part.partHpMax;
+            } else {
+              partsHpCurrent[i] = 0;
+            }
+            
             updatePartDesc(i);
 
             const pts = calculateCreationPoints();
@@ -3848,11 +3863,30 @@
     // === パーティHP共有機能 ===
     function pushLocalStatusToFirebase() {
       if (!currentRoomId || !statusRef) return;
+      
+      const subChars = [];
+      document.querySelectorAll('.common-part-select').forEach((sel, i) => {
+        const toggle = document.getElementById(`part-toggle-${i}`);
+        if (toggle && toggle.checked) {
+          const idx = sel.selectedIndex;
+          const part = COMMON_PARTS[idx];
+          if (part && part.partHpMax) {
+            subChars.push({
+              slotIdx: i,
+              name: part.name,
+              hpMax: part.partHpMax,
+              hpCurrent: partsHpCurrent[i] || 0
+            });
+          }
+        }
+      });
+      
       const charName = document.getElementById('char-name').value || '名無し';
       statusRef.child(localSessionId).update({
         charName: charName,
         hpCurrent: hpCurrent,
         hpMax: hpMax,
+        subChars: subChars,
         lastUpdated: firebase.database.ServerValue.TIMESTAMP
       });
     }
@@ -3867,27 +3901,38 @@
         
         // 自分のデータ変更があればローカルと同期（別ウィンドウでの操作や、他プレイヤーからの操作反映用）
         if (key === localSessionId) {
+          let updated = false;
           if (member.hpCurrent !== undefined && member.hpCurrent !== hpCurrent) {
              hpCurrent = member.hpCurrent;
              origRenderHp();
-             saveToStorage();
+             updated = true;
           }
-          return; // 自分自身はリストに表示しない
+          if (member.subChars) {
+            member.subChars.forEach(sub => {
+               if (partsHpCurrent[sub.slotIdx] !== sub.hpCurrent) {
+                 partsHpCurrent[sub.slotIdx] = sub.hpCurrent;
+                 updated = true;
+               }
+            });
+          }
+          if (updated) saveToStorage();
         }
         
-        // 自分以外を描画する
+        // メインキャラクターの描画
         const hpCurrentVal = member.hpCurrent || 0;
         const hpMaxVal = member.hpMax || 1;
         const pct = Math.max(0, Math.min(100, (hpCurrentVal / hpMaxVal) * 100));
         const div = document.createElement('div');
         div.className = 'party-member';
         
-        // GM用キックボタンのHTML
-        const kickBtnHtml = isGM ? `<button class="btn-party-op kick" style="background-color: var(--accent-red); margin-left: 4px;">キック</button>` : '';
+        // GM用キックボタンのHTML（自分以外の場合のみ表示）
+        const kickBtnHtml = (isGM && key !== localSessionId) ? 
+          `<button class="btn-party-op kick" style="background-color: var(--accent-red); margin-left: 4px;">キック</button>` : '';
+        const nameSuffix = (key === localSessionId) ? ' (あなた)' : '';
         
         div.innerHTML = `
           <div class="party-info">
-            <div class="party-name">${member.charName}</div>
+            <div class="party-name">${member.charName}${nameSuffix}</div>
             <div class="party-hp-container">
                <div class="party-hp-bar-bg"><div class="party-hp-bar-fill" style="width: ${pct}%"></div></div>
                <div class="party-hp-text">${hpCurrentVal} / ${hpMaxVal}</div>
@@ -3901,10 +3946,36 @@
         div.querySelector('.btn-party-op').onclick = () => {
           operatePartyHp(key, member.charName, hpCurrentVal, hpMaxVal);
         };
-        if (isGM) {
+        if (isGM && key !== localSessionId) {
           div.querySelector('.btn-party-op.kick').onclick = () => kickPartyMember(key, member.charName);
         }
         list.appendChild(div);
+        
+        // サブキャラクターの描画
+        if (member.subChars && member.subChars.length > 0) {
+          member.subChars.forEach(sub => {
+            const subPct = Math.max(0, Math.min(100, (sub.hpCurrent / sub.hpMax) * 100));
+            const subDiv = document.createElement('div');
+            subDiv.className = 'party-member';
+            subDiv.style.marginLeft = '20px'; // インデントを下げる
+            subDiv.innerHTML = `
+              <div class="party-info">
+                <div class="party-name">┗ ${sub.name}</div>
+                <div class="party-hp-container">
+                   <div class="party-hp-bar-bg"><div class="party-hp-bar-fill" style="width: ${subPct}%; background-color: var(--accent-orange);"></div></div>
+                   <div class="party-hp-text">${sub.hpCurrent} / ${sub.hpMax}</div>
+                </div>
+              </div>
+              <div class="party-actions">
+                <button class="btn-party-op">HP調整</button>
+              </div>
+            `;
+            subDiv.querySelector('.btn-party-op').onclick = () => {
+              operateSubCharHp(key, sub.slotIdx, `${member.charName}の(${sub.name})`, sub.hpCurrent, sub.hpMax);
+            };
+            list.appendChild(subDiv);
+          });
+        }
       });
     }
 
@@ -3956,6 +4027,54 @@
         const myName = document.getElementById('char-name').value || '名前未設定';
         const actionText = realAmount > 0 ? `${realAmount}点 回復` : `${Math.abs(realAmount)}点 ダメージ`;
         const msg = `[システム] ${myName}が回復魔法等により、${targetName}のHPを ${actionText} させました！ (現在HP: ${newHp})`;
+        
+        firebaseRef.push({
+          type: 'chat',
+          sessionId: 'SYSTEM',
+          charName: 'システム',
+          text: msg,
+          timestamp: firebase.database.ServerValue.TIMESTAMP
+        });
+      }
+    }
+
+    function operateSubCharHp(targetSessionId, slotIdx, targetName, targetHp, targetMaxHp) {
+      const input = prompt(`${targetName} のHPを調整します。\n回復するなら正の数（例: 3）、ダメージなら負の数（例: -2）を入力してください。`);
+      if (!input) return;
+      const amount = parseInt(input, 10);
+      if (isNaN(amount) || amount === 0) return;
+      
+      let newHp = targetHp + amount;
+      if (newHp > targetMaxHp) newHp = targetMaxHp;
+      if (newHp < 0) newHp = 0;
+      
+      const realAmount = newHp - targetHp;
+      if (realAmount === 0) {
+        alert("これ以上HPを変化させられません。");
+        return;
+      }
+
+      // Firebase 上の対象データを取得して更新する
+      if (statusRef) {
+        statusRef.child(targetSessionId).once('value').then(snap => {
+          const data = snap.val();
+          if (data && data.subChars) {
+            const updatedSubChars = data.subChars.map(sub => {
+              if (sub.slotIdx === slotIdx) {
+                return { ...sub, hpCurrent: newHp };
+              }
+              return sub;
+            });
+            statusRef.child(targetSessionId).update({ subChars: updatedSubChars });
+          }
+        });
+      }
+
+      // システムメッセージをチャットに送信
+      if (firebaseRef) {
+        const myName = document.getElementById('char-name').value || '名前未設定';
+        const actionText = realAmount > 0 ? `${realAmount}点 回復` : `${Math.abs(realAmount)}点 ダメージ`;
+        const msg = `[システム] ${myName}が ${targetName}のHPを ${actionText} させました！ (現在HP: ${newHp})`;
         
         firebaseRef.push({
           type: 'chat',
