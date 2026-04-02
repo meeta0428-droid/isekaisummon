@@ -1619,16 +1619,16 @@
       { name: '弓', cost: 5, stat: '敏捷力', effect: '戦闘判定で射程１で攻撃することができる。遠距離攻撃ができる弓。' },
       { name: '盾', cost: 5, stat: '体力', effect: '戦闘で防御判定時に＋１d。敵からの攻撃を受け止めることができる盾', diceBonus: { hp: 1 } },
       { name: '鎧', cost: 5, stat: 'ー', effect: 'HP＋５。攻撃を受ける時にダメージを防ぐ鎧。', modifiers: { hp: 5 } },
-      { name: 'ハンドガン', cost: 10, stat: '敏捷力', effect: '戦闘で判定成功数＋１。射程１。銃弾を放つ武器。使用するたびにSPを１点使用する。' },
-      { name: 'サブマシンガン', cost: 15, stat: '敏捷力', effect: '出目3も成功になる。射程１。大量の銃弾を放つ武器。使用するたびにSPを１点使用する。', successThreshold: 3 },
+      { name: 'ハンドガン', cost: 10, stat: '敏捷力', effect: '戦闘で判定成功数＋１。射程１。銃弾を放つ武器。使用するたびにSPを１点使用する。', spCost: 1 },
+      { name: 'サブマシンガン', cost: 15, stat: '敏捷力', effect: '出目3も成功になる。射程１。大量の銃弾を放つ武器。使用するたびにSPを１点使用する。', successThreshold: 3, spCost: 1 },
       { name: 'スマートフォン', cost: 5, stat: '知力', effect: '情報で判定＋１d。回線が繋がらないスマートフォン。充電は常に満タン。チートスキルが次元を超えるものなら回線が繋がるかもしれない。', diceBonus: { int: 1 } },
-      { name: '攻撃魔法', cost: 10, stat: '知力', effect: '戦闘で判定＋２d。射程１。魔力を攻撃に変える。SPを1点使用する。', diceBonus: { int: 2 } },
-      { name: '防御魔法', cost: 10, stat: '知力', effect: '戦闘で防御判定＋２d。射程１。仲間に対する攻撃を防ぐことができる。魔力を防御に変える。SPを1点使用する。', diceBonus: { int: 2 } },
-      { name: '回復魔法', cost: 10, stat: '知力', effect: 'ダメージを（消費したSP＋成功数）点回復することができる。射程１。魔力を回復に変える。SPを1点使用する。' },
-      { name: '支援魔法', cost: 10, stat: '知力', effect: '戦闘で他者の判定＋２d。射程１。魔力を加護に変える。SPを1点使用する。' },
+      { name: '攻撃魔法', cost: 10, stat: '知力', effect: '戦闘で判定＋２d。射程１。魔力を攻撃に変える。SPを1点使用する。', diceBonus: { int: 2 }, spCost: 1 },
+      { name: '防御魔法', cost: 10, stat: '知力', effect: '戦闘で防御判定＋２d。射程１。仲間に対する攻撃を防ぐことができる。魔力を防御に変える。SPを1点使用する。', diceBonus: { int: 2 }, spCost: 1 },
+      { name: '回復魔法', cost: 10, stat: '知力', effect: 'ダメージを（消費したSP＋成功数）点回復することができる。射程１。魔力を回復に変える。SPを1点使用する。', spCost: 1 },
+      { name: '支援魔法', cost: 10, stat: '知力', effect: '戦闘で他者の判定＋２d。射程１。魔力を加護に変える。SPを1点使用する。', spCost: 1 },
       { name: '仲間', cost: 10, stat: '魅力', effect: 'あらゆる判定に＋２d。HP５点。いろんな場面で頼れる仲間を連れている。', diceBonus: { hp: 2, agi: 2, int: 2, cha: 2 } },
       { name: '従者', cost: 10, stat: '魅力', effect: '戦闘で判定＋１d。HP８点。戦いの場を代わりに引き受ける従者を連れている。', diceBonus: { cha: 1 } },
-      { name: '配下', cost: 5, stat: '魅力', effect: 'あらゆる判定に成功数＋１。HP３点。SP1点を消費する。金次第で活躍する配下を連れている。' },
+      { name: '配下', cost: 5, stat: '魅力', effect: 'あらゆる判定に成功数＋１。HP３点。SP1点を消費する。金次第で活躍する配下を連れている。', spCost: 1 },
       { name: '財貨（5点）', cost: 5, stat: '魅力', effect: 'あらゆる判定に＋１dする。使い捨て。いつでも役に立つ現金を持っている。', diceBonus: { hp: 1, agi: 1, int: 1, cha: 1 } },
       { name: '肉体鍛錬', cost: 5, stat: 'ー', effect: '体力、敏捷力の判定成功数＋１。肉体の鍛錬を行い、一般人を逸脱した肉体を持つ。' },
       { name: '精神鍛錬', cost: 5, stat: 'ー', effect: 'SP＋2点。あなたの精神は通常の人間よりも強い心を持つ。', modifiers: { sp: 2 } },
@@ -1911,8 +1911,14 @@
       const totalBonus = activeBonus;
       const finalSuccess = successCount + totalBonus;
 
-      // SP加算
+      // SP加算（ダイス出目1の分）
       spTotal += spGained;
+      // コモンパーツのSP消費を適用
+      const partsSpCost = getCommonPartsSpCost();
+      if (partsSpCost > 0) {
+        spTotal -= partsSpCost;
+        console.log(`[コモンパーツ] SP消費: -${partsSpCost}`);
+      }
       updateSpDisplay();
 
       // 結果表示
@@ -2631,6 +2637,18 @@
       return threshold;
     }
 
+    // 装備中コモンパーツの合計SP消費を計算
+    function getCommonPartsSpCost() {
+      let totalCost = 0;
+      document.querySelectorAll('.common-part-select').forEach(sel => {
+        const part = COMMON_PARTS[sel.selectedIndex];
+        if (part && part.spCost) {
+          totalCost += part.spCost;
+        }
+      });
+      return totalCost;
+    }
+
     // 体力からHP最大値を計算して反映（コモンパーツ補正込み）
     function updateHpFromStat(statVal) {
       const mods = getCommonPartsModifiers();
@@ -2732,8 +2750,14 @@
         const totalBonus = activeBonus;
         const finalSuccess = successCount + totalBonus;
 
-        // SP加算
+        // SP加算（ダイス出目1の分）
         spTotal += spGained;
+        // コモンパーツのSP消費を適用
+        const partsSpCost = getCommonPartsSpCost();
+        if (partsSpCost > 0) {
+          spTotal -= partsSpCost;
+          console.log(`[コモンパーツ] SP消費: -${partsSpCost}`);
+        }
         elSpTotal.textContent = spTotal;
 
         // 結果を能力値判定エリアに表示
