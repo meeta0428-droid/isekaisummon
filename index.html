@@ -2777,7 +2777,7 @@
         elSpTotal.textContent = spTotal;
 
         // 結果を能力値判定エリアに表示
-        renderStatResult(key, diceNum, results, successCount, failCount, spGained, totalBonus, finalSuccess);
+        renderStatResult(key, diceNum, results, successCount, failCount, spGained, totalBonus, finalSuccess, partsSuccessBonus);
 
         // ダイスロール後にアクティブスキルをリセット（1ロール限定効果）
         resetActiveSkills();
@@ -2819,7 +2819,9 @@
       });
     });
 
-    function renderStatResult(key, diceNum, results, successCount, failCount, spGained, bonus, finalSuccess) {
+    function renderStatResult(key, diceNum, results, successCount, failCount, spGained, bonus, finalSuccess, partsSuccessBonus) {
+      if (!partsSuccessBonus) partsSuccessBonus = 0;
+      const allBonus = bonus + partsSuccessBonus; // チート+コモンパーツの合計ボーナス
       let html = `<div class="stat-result-header">`;
       html += `<span>${STAT_ICONS[key]}</span>`;
       html += `<span class="stat-result-name">${STAT_NAMES[key]}判定</span>`;
@@ -2839,16 +2841,25 @@
         const delay = (results.length + i) * 0.08;
         html += `<div class="die success" style="animation-delay: ${delay}s; border-color: var(--accent-purple); color: var(--accent-purple); box-shadow: 0 0 12px rgba(179,136,255,0.4); text-shadow: 0 0 8px rgba(179,136,255,0.6);">★</div>`;
       }
+
+      // コモンパーツの成功数ボーナス分の確定成功ダイスを描画
+      for (let i = 0; i < partsSuccessBonus; i++) {
+        const delay = (results.length + bonus + i) * 0.08;
+        html += `<div class="die success" style="animation-delay: ${delay}s; border-color: var(--accent-cyan); color: var(--accent-cyan); box-shadow: 0 0 12px rgba(0,229,255,0.4); text-shadow: 0 0 8px rgba(0,229,255,0.6);">★</div>`;
+      }
       
       html += '</div>';
 
       if (bonus > 0) {
         html += `<div class="bonus-badge">🔮 チートボーナス <span class="bonus-val">+${bonus}</span></div>`;
       }
+      if (partsSuccessBonus > 0) {
+        html += `<div class="bonus-badge" style="background: rgba(0,229,255,0.1); border-color: rgba(0,229,255,0.3);">🎯 コモンパーツボーナス <span class="bonus-val" style="color: var(--accent-cyan);">+${partsSuccessBonus}</span></div>`;
+      }
 
       html += '<div class="summary-bar">';
-      if (bonus > 0) {
-        html += `<div class="summary-item"><span class="summary-dot success"></span><span class="count">${successCount}+${bonus}=${finalSuccess}</span><span class="label">成功</span></div>`;
+      if (allBonus > 0) {
+        html += `<div class="summary-item"><span class="summary-dot success"></span><span class="count">${successCount}+${allBonus}=${finalSuccess}</span><span class="label">成功</span></div>`;
       } else {
         html += `<div class="summary-item"><span class="summary-dot success"></span><span class="count">${successCount}</span><span class="label">成功</span></div>`;
       }
