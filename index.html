@@ -1614,7 +1614,7 @@
     const COMMON_PARTS = [
       { name: '未装備', cost: 0, stat: 'ー', effect: '' },
       { name: '剣', cost: 5, stat: '体力', effect: '戦闘で判定＋１d。鋭い刃のついた刀剣類', diceBonus: { hp: 1 } },
-      { name: '斧', cost: 5, stat: '体力', effect: '戦闘判定で６が出るとダメージ＋１。大ぶりな斧類' },
+      { name: '斧', cost: 5, stat: '体力', effect: '６の出目が出た分だけ自動成功＋１。大ぶりな斧類', sixBonus: true },
       { name: 'ハンマー', cost: 5, stat: '体力', effect: '戦闘判定で必要成功数が１下がる。大きなハンマー。' },
       { name: '弓', cost: 5, stat: '敏捷力', effect: '戦闘判定で射程１で攻撃することができる。遠距離攻撃ができる弓。' },
       { name: '盾', cost: 5, stat: '体力', effect: '戦闘で防御判定時に＋１d。敵からの攻撃を受け止めることができる盾', diceBonus: { hp: 1 } },
@@ -1915,7 +1915,9 @@
 
       // アクティブなチートボーナスを加算
       const totalBonus = activeBonus;
-      const finalSuccess = successCount + totalBonus;
+      // 斧のsixBonus：出目6の数だけ自動成功追加
+      const sixBonusCount = hasSixBonus() ? results.filter(v => v === 6).length : 0;
+      const finalSuccess = successCount + totalBonus + sixBonusCount;
 
       // SP加算（ダイス出目1の分）
       spTotal += spGained;
@@ -1928,7 +1930,7 @@
       updateSpDisplay();
 
       // 結果表示
-      renderResults(results, successCount, failCount, spGained, totalBonus, finalSuccess, successThreshold);
+      renderResults(results, successCount, failCount, spGained, totalBonus, finalSuccess, successThreshold, sixBonusCount);
 
       // 履歴に追加 (Firebase共有 + ローカルUI反映)
       const charName = document.getElementById('char-name').value || '名無し';
@@ -2009,8 +2011,10 @@
     }
 
     // === 結果の描画 ===
-    function renderResults(results, successCount, failCount, spGained, bonus, finalSuccess, threshold) {
+    function renderResults(results, successCount, failCount, spGained, bonus, finalSuccess, threshold, sixBonusCount) {
       if (!threshold) threshold = 4;
+      if (!sixBonusCount) sixBonusCount = 0;
+      const allBonus = bonus + sixBonusCount;
       let html = '<div class="dice-results">';
       results.forEach((val, i) => {
         let cls = val >= threshold ? 'success' : 'fail';
@@ -2023,6 +2027,12 @@
         const delay = (results.length + i) * 0.08;
         html += `<div class="die success" style="animation-delay: ${delay}s; border-color: var(--accent-purple); color: var(--accent-purple); box-shadow: 0 0 12px rgba(179,136,255,0.4); text-shadow: 0 0 8px rgba(179,136,255,0.6);">★</div>`;
       }
+
+      // 斧のsixBonus分の確定成功ダイスを描画（オレンジ色）
+      for (let i = 0; i < sixBonusCount; i++) {
+        const delay = (results.length + bonus + i) * 0.08;
+        html += `<div class="die success" style="animation-delay: ${delay}s; border-color: #ff9800; color: #ff9800; box-shadow: 0 0 12px rgba(255,152,0,0.4); text-shadow: 0 0 8px rgba(255,152,0,0.6);">★</div>`;
+      }
       
       html += '</div>';
 
@@ -2030,11 +2040,14 @@
       if (bonus > 0) {
         html += `<div class="bonus-badge">🔮 チートボーナス <span class="bonus-val">+${bonus}</span></div>`;
       }
+      if (sixBonusCount > 0) {
+        html += `<div class="bonus-badge" style="background: rgba(255,152,0,0.1); border-color: rgba(255,152,0,0.3);">🪨 斧ボーナス（6の出目） <span class="bonus-val" style="color: #ff9800;">+${sixBonusCount}</span></div>`;
+      }
 
       // サマリーバー
       html += '<div class="summary-bar">';
-      if (bonus > 0) {
-        html += `<div class="summary-item"><span class="summary-dot success"></span><span class="count">${successCount}+${bonus}=${finalSuccess}</span><span class="label">成功</span></div>`;
+      if (allBonus > 0) {
+        html += `<div class="summary-item"><span class="summary-dot success"></span><span class="count">${successCount}+${allBonus}=${finalSuccess}</span><span class="label">成功</span></div>`;
       } else {
         html += `<div class="summary-item"><span class="summary-dot success"></span><span class="count">${successCount}</span><span class="label">成功</span></div>`;
       }
@@ -2655,6 +2668,16 @@
       return totalCost;
     }
 
+    // 装備中コモンパーツにsixBonusがあるか判定
+    function hasSixBonus() {
+      let has = false;
+      document.querySelectorAll('.common-part-select').forEach(sel => {
+        const part = COMMON_PARTS[sel.selectedIndex];
+        if (part && part.sixBonus) has = true;
+      });
+      return has;
+    }
+
     // 装備中コモンパーツの能力値別成功数ボーナス合計を計算
     // statKey: 'hp', 'agi', 'int', 'cha'
     function getCommonPartsSuccessBonus(statKey) {
@@ -2776,8 +2799,11 @@
         const totalBonus = activeBonus;
         // コモンパーツの成功数ボーナスを加算
         const partsSuccessBonus = getCommonPartsSuccessBonus(key);
-        const finalSuccess = successCount + totalBonus + partsSuccessBonus;
+        // 斧のsixBonus：出目6の数だけ自動成功追加
+        const sixBonusCount = hasSixBonus() ? results.filter(v => v === 6).length : 0;
+        const finalSuccess = successCount + totalBonus + partsSuccessBonus + sixBonusCount;
         if (partsSuccessBonus > 0) console.log(`[能力値判定] コモンパーツ成功数+${partsSuccessBonus}`);
+        if (sixBonusCount > 0) console.log(`[能力値判定] 斧ボーナス(6の出目)+${sixBonusCount}`);
 
         // SP加算（ダイス出目1の分）
         spTotal += spGained;
@@ -2790,7 +2816,7 @@
         elSpTotal.textContent = spTotal;
 
         // 結果を能力値判定エリアに表示
-        renderStatResult(key, diceNum, results, successCount, failCount, spGained, totalBonus, finalSuccess, partsSuccessBonus);
+        renderStatResult(key, diceNum, results, successCount, failCount, spGained, totalBonus, finalSuccess, partsSuccessBonus, sixBonusCount);
 
         // ダイスロール後にアクティブスキルをリセット（1ロール限定効果）
         resetActiveSkills();
@@ -2832,9 +2858,10 @@
       });
     });
 
-    function renderStatResult(key, diceNum, results, successCount, failCount, spGained, bonus, finalSuccess, partsSuccessBonus) {
+    function renderStatResult(key, diceNum, results, successCount, failCount, spGained, bonus, finalSuccess, partsSuccessBonus, sixBonusCount) {
       if (!partsSuccessBonus) partsSuccessBonus = 0;
-      const allBonus = bonus + partsSuccessBonus; // チート+コモンパーツの合計ボーナス
+      if (!sixBonusCount) sixBonusCount = 0;
+      const allBonus = bonus + partsSuccessBonus + sixBonusCount; // チート+コモンパーツの合計ボーナス
       let html = `<div class="stat-result-header">`;
       html += `<span>${STAT_ICONS[key]}</span>`;
       html += `<span class="stat-result-name">${STAT_NAMES[key]}判定</span>`;
@@ -2860,6 +2887,12 @@
         const delay = (results.length + bonus + i) * 0.08;
         html += `<div class="die success" style="animation-delay: ${delay}s; border-color: var(--accent-cyan); color: var(--accent-cyan); box-shadow: 0 0 12px rgba(0,229,255,0.4); text-shadow: 0 0 8px rgba(0,229,255,0.6);">★</div>`;
       }
+
+      // 斧のsixBonus分の確定成功ダイスを描画（オレンジ色）
+      for (let i = 0; i < sixBonusCount; i++) {
+        const delay = (results.length + bonus + partsSuccessBonus + i) * 0.08;
+        html += `<div class="die success" style="animation-delay: ${delay}s; border-color: #ff9800; color: #ff9800; box-shadow: 0 0 12px rgba(255,152,0,0.4); text-shadow: 0 0 8px rgba(255,152,0,0.6);">★</div>`;
+      }
       
       html += '</div>';
 
@@ -2868,6 +2901,9 @@
       }
       if (partsSuccessBonus > 0) {
         html += `<div class="bonus-badge" style="background: rgba(0,229,255,0.1); border-color: rgba(0,229,255,0.3);">🎯 コモンパーツボーナス <span class="bonus-val" style="color: var(--accent-cyan);">+${partsSuccessBonus}</span></div>`;
+      }
+      if (sixBonusCount > 0) {
+        html += `<div class="bonus-badge" style="background: rgba(255,152,0,0.1); border-color: rgba(255,152,0,0.3);">🪨 斧ボーナス（6の出目） <span class="bonus-val" style="color: #ff9800;">+${sixBonusCount}</span></div>`;
       }
 
       html += '<div class="summary-bar">';
