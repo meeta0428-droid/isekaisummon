@@ -1422,7 +1422,7 @@
         <button class="hp-damage-btn" id="btn-damage">🗡️ ダメージ</button>
         <button class="hp-heal-btn" id="btn-heal">💚 回復</button>
       </div>
-      <div class="hp-formula">※ HP = 体力 × 2 + 10</div>
+      <div class="hp-formula">※ HP = 体力 × 2 + 10 ＋ コモンパーツ補正</div>
     </div>
 
     <!-- ルール説明 -->
@@ -1618,7 +1618,7 @@
       { name: 'ハンマー', cost: 5, stat: '体力', effect: '戦闘判定で必要成功数が１下がる。大きなハンマー。' },
       { name: '弓', cost: 5, stat: '敏捷力', effect: '戦闘判定で射程１で攻撃することができる。遠距離攻撃ができる弓。' },
       { name: '盾', cost: 5, stat: '体力', effect: '戦闘で防御判定時に＋１d。敵からの攻撃を受け止めることができる盾' },
-      { name: '鎧', cost: 5, stat: 'ー', effect: 'HP＋５。攻撃を受ける時にダメージを防ぐ鎧。' },
+      { name: '鎧', cost: 5, stat: 'ー', effect: 'HP＋５。攻撃を受ける時にダメージを防ぐ鎧。', modifiers: { hp: 5 } },
       { name: 'ハンドガン', cost: 10, stat: '敏捷力', effect: '戦闘で判定成功数＋１。射程１。銃弾を放つ武器。使用するたびにSPを１点使用する。' },
       { name: 'サブマシンガン', cost: 15, stat: '敏捷力', effect: '戦闘で１エリア全体を攻撃できる。射程１。大量の銃弾を放つ武器。使用するたびにSPを１点使用する。' },
       { name: 'スマートフォン', cost: 5, stat: '知力', effect: '情報で判定＋１d。回線が繋がらないスマートフォン。充電は常に満タン。チートスキルが次元を超えるものなら回線が繋がるかもしれない。' },
@@ -1631,9 +1631,9 @@
       { name: '配下', cost: 5, stat: '魅力', effect: 'あらゆる判定に成功数＋１。HP３点。SP1点を消費する。金次第で活躍する配下を連れている。' },
       { name: '財貨（5点）', cost: 5, stat: '魅力', effect: 'あらゆる判定に＋１dする。使い捨て。いつでも役に立つ現金を持っている。' },
       { name: '肉体鍛錬', cost: 5, stat: 'ー', effect: '体力、敏捷力の判定成功数＋１。肉体の鍛錬を行い、一般人を逸脱した肉体を持つ。' },
-      { name: '精神鍛錬', cost: 5, stat: 'ー', effect: 'SP＋2点。あなたの精神は通常の人間よりも強い心を持つ。' },
-      { name: '義肢改造', cost: 5, stat: 'ー', effect: 'HP＋４。戦闘判定＋１d。魅力判定−１d。ぱっと見でわかる義肢を持つ。改造されたそれは、一般人から見たら忌避の対象かもしれない。' },
-      { name: 'サイバーウェア', cost: 10, stat: 'ー', effect: 'HP＋６、体力、敏捷力判定＋１d。高性能な義肢を持っている。見た目も変化動作をさせなければ、普通の体と変わらない見た目を持つ。' },
+      { name: '精神鍛錬', cost: 5, stat: 'ー', effect: 'SP＋2点。あなたの精神は通常の人間よりも強い心を持つ。', modifiers: { sp: 2 } },
+      { name: '義肢改造', cost: 5, stat: 'ー', effect: 'HP＋４。戦闘判定＋１d。魅力判定−１d。ぱっと見でわかる義肢を持つ。改造されたそれは、一般人から見たら忌避の対象かもしれない。', modifiers: { hp: 4 } },
+      { name: 'サイバーウェア', cost: 10, stat: 'ー', effect: 'HP＋６、体力、敏捷力判定＋１d。高性能な義肢を持っている。見た目も変化動作をさせなければ、普通の体と変わらない見た目を持つ。', modifiers: { hp: 6 } },
       { name: 'TS', cost: 5, stat: 'ー', effect: '魅力判定＋１d。あなたは精神と性別が入れ替わっている。怪しい魅力が漂っている。' },
       { name: 'ピックアップトラック', cost: 10, stat: '敏捷力', effect: '５人乗りの荷台のある車' }
     ];
@@ -2589,10 +2589,39 @@
     const elHpBar = document.getElementById('hp-bar');
     const elHpDamageInput = document.getElementById('hp-damage-input');
 
-    // 体力からHP最大値を計算して反映
+    // 装備中コモンパーツのmodifier合計を計算
+    function getCommonPartsModifiers() {
+      const mods = { hp: 0, sp: 0 };
+      document.querySelectorAll('.common-part-select').forEach(sel => {
+        const part = COMMON_PARTS[sel.selectedIndex];
+        if (part && part.modifiers) {
+          Object.keys(part.modifiers).forEach(key => {
+            mods[key] = (mods[key] || 0) + part.modifiers[key];
+          });
+        }
+      });
+      return mods;
+    }
+
+    // 体力からHP最大値を計算して反映（コモンパーツ補正込み）
     function updateHpFromStat(statVal) {
-      hpMax = statVal * 2 + 10;
+      const mods = getCommonPartsModifiers();
+      hpMax = statVal * 2 + 10 + mods.hp;
       hpCurrent = hpMax;
+      renderHp();
+    }
+
+    // コモンパーツ変更時のHP/SP再計算
+    function recalcFromCommonParts() {
+      const mods = getCommonPartsModifiers();
+      const hpStat = parseInt(document.getElementById('stat-hp').dataset.val) || 3;
+      const oldMax = hpMax;
+      const newMax = hpStat * 2 + 10 + mods.hp;
+      console.log(`[recalcFromCommonParts] 体力=${hpStat}, mods.hp=${mods.hp}, oldMax=${oldMax}, newMax=${newMax}`);
+      hpMax = newMax;
+      // HPの差分を現在HPにも反映
+      hpCurrent = Math.max(0, hpCurrent + (hpMax - oldMax));
+      if (hpCurrent > hpMax) hpCurrent = hpMax;
       renderHp();
     }
 
@@ -2887,15 +2916,24 @@
             updatePartDesc(i);
           }
 
-          sel.addEventListener('change', (e) => {
+          // コモンパーツ変更時の処理（change + input の両方でSafari対応）
+          function onPartChange(e) {
             const target = e.target;
             const idx = target.selectedIndex;
+            // 前回と同じ選択なら何もしない（input重複防止）
+            if (String(idx) === target.dataset.prevIdx) return;
+            console.log(`[コモンパーツ] スロット${i}: ${COMMON_PARTS[idx].name} 選択 (idx=${idx})`);
             updatePartDesc(i);
             
             const pts = calculateCreationPoints();
-            target.dataset.prevIdx = target.selectedIndex;
+            target.dataset.prevIdx = String(target.selectedIndex);
+            // コモンパーツ変更時にHP・SPを再計算
+            recalcFromCommonParts();
+            console.log(`[コモンパーツ] HP: ${hpCurrent}/${hpMax}`);
             saveToStorage();
-          });
+          }
+          sel.addEventListener('change', onPartChange);
+          sel.addEventListener('input', onPartChange);
         }
       }
 
