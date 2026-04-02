@@ -2010,8 +2010,10 @@
     let currentRoomId = null;
     let firebaseRef = null;
     let statusRef = null;
+    let roomInfoRef = null;
     let firebaseListener = null;
     let isSyncingFromFirebase = false; // Firebase→ローカル反映中フラグ
+    let isGM = false; // 自身がGMかどうか
 
     // === ローカルセッションID（ダイス履歴の重複受信防止用） ===
     const localSessionId = Math.random().toString(36).substring(2, 15);
@@ -2225,10 +2227,46 @@
       if (statusRef) {
         statusRef.off('value');
       }
+      if (roomInfoRef) {
+        roomInfoRef.off('value');
+      }
 
       currentRoomId = roomId;
       firebaseRef = db.ref('shared_dice/' + roomId);
       statusRef = db.ref('room_status/' + roomId);
+      roomInfoRef = db.ref('room_info/' + roomId);
+
+      // GM権限の取得トランザクション（誰もいなければ自分がGMになる）
+      roomInfoRef.child('gmSessionId').transaction((currentData) => {
+        if (currentData === null) {
+          return localSessionId;
+        }
+        return currentData; // 既にGMがいる場合は変更しない
+      }, (error, committed, snapshot) => {
+        if (error) {
+          console.error('Transaction failed:', error);
+        } else {
+          isGM = (snapshot.val() === localSessionId);
+          console.log(isGM ? '[GM] あなたがGM権限を取得しました' : '[Player] プレイヤーとして参加しました');
+        }
+      });
+      
+      // GMが切断した時の対応（GMを空にする等）
+      // TRPG特有のホスト抜けを考慮し、もし自身がGMなら切断時にgmSessionIdを消す処理を追加
+      roomInfoRef.child('gmSessionId').onDisconnect().cancel(); // 既存のキャンセルを解除
+      
+      roomInfoRef.child('gmSessionId').on('value', snap => {
+         // 最新のGM状態を同期して切断時の削除予約を手動で管理する
+         if (snap.val() === localSessionId) {
+             roomInfoRef.child('gmSessionId').onDisconnect().remove();
+             isGM = true;
+         } else {
+             roomInfoRef.child('gmSessionId').onDisconnect().cancel();
+             isGM = false;
+         }
+         // UI再描画用
+         statusRef.once('value').then(snap => renderPartyInfo(snap.val()));
+      });
 
       // 切断時に自身を削除 (disconnect)
       statusRef.child(localSessionId).onDisconnect().remove();
@@ -2238,7 +2276,14 @@
 
       // パーティ情報を監視
       statusRef.on('value', (snap) => {
-        renderPartyInfo(snap.val());
+        const data = snap.val();
+        if (data && data[localSessionId] && data[localSessionId].kicked) {
+          // キックされた場合
+          alert('GMによってこのルームから退出させられました。');
+          disconnectRoom();
+          return;
+        }
+        renderPartyInfo(data);
       });
       document.getElementById('party-card').style.display = 'block';
 
@@ -2284,6 +2329,14 @@
         statusRef.off('value');
         statusRef = null;
       }
+      if (roomInfoRef) {
+        if (isGM) {
+            roomInfoRef.child('gmSessionId').remove();
+        }
+        roomInfoRef.off('value');
+        roomInfoRef = null;
+      }
+      isGM = false;
       currentRoomId = null;
       firebaseRef = null;
       firebaseListener = null;
@@ -3828,6 +3881,10 @@
         const pct = Math.max(0, Math.min(100, (hpCurrentVal / hpMaxVal) * 100));
         const div = document.createElement('div');
         div.className = 'party-member';
+        
+        // GM用キックボタンのHTML
+        const kickBtnHtml = isGM ? `<button class="btn-party-op kick" style="background-color: var(--accent-red); margin-left: 4px;">キック</button>` : '';
+        
         div.innerHTML = `
           <div class="party-info">
             <div class="party-name">${member.charName}</div>
@@ -3838,13 +3895,39 @@
           </div>
           <div class="party-actions">
             <button class="btn-party-op">HP調整</button>
+            ${kickBtnHtml}
           </div>
         `;
         div.querySelector('.btn-party-op').onclick = () => {
           operatePartyHp(key, member.charName, hpCurrentVal, hpMaxVal);
         };
+        if (isGM) {
+          div.querySelector('.btn-party-op.kick').onclick = () => kickPartyMember(key, member.charName);
+        }
         list.appendChild(div);
       });
+    }
+
+    // GMによる強制退室処理
+    function kickPartyMember(targetSessionId, targetName) {
+      if (!confirm(`本当に ${targetName} を退出させますか？`)) return;
+      
+      // 対象のkickedフラグを立てる
+      if (statusRef) {
+        statusRef.child(targetSessionId).update({ kicked: true });
+      }
+      
+      // システムメッセージ通知
+      if (firebaseRef) {
+        const msg = `[システム] ${targetName} がGMによってルームから退出させられました。`;
+        firebaseRef.push({
+          type: 'chat',
+          sessionId: 'SYSTEM',
+          charName: 'システム',
+          text: msg,
+          timestamp: firebase.database.ServerValue.TIMESTAMP
+        });
+      }
     }
 
     function operatePartyHp(targetSessionId, targetName, targetHp, targetMaxHp) {
