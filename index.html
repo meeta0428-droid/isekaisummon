@@ -1,16 +1,21 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>異世界召喚TRPG - ダイスローラー</title>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=Orbitron:wght@700;900&display=swap"
+    rel="stylesheet">
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
   <style>
     /* === リセット & 基本 === */
-    *, *::before, *::after {
+    *,
+    *::before,
+    *::after {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
@@ -45,7 +50,10 @@
     body::before {
       content: '';
       position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
       background:
         radial-gradient(circle at 20% 30%, rgba(0, 229, 255, 0.06) 0%, transparent 50%),
         radial-gradient(circle at 80% 70%, rgba(179, 136, 255, 0.06) 0%, transparent 50%),
@@ -122,6 +130,7 @@
       gap: 6px;
       justify-content: center;
     }
+
     .stat-result-header .stat-result-name {
       font-weight: 700;
       color: var(--accent-cyan);
@@ -199,9 +208,11 @@
     .roll-btn::before {
       content: '';
       position: absolute;
-      top: 0; left: -100%;
-      width: 100%; height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
       transition: left 0.5s;
     }
 
@@ -224,9 +235,17 @@
     }
 
     @keyframes pulse-btn {
-      0% { transform: scale(1); }
-      50% { transform: scale(0.97); }
-      100% { transform: scale(1); }
+      0% {
+        transform: scale(1);
+      }
+
+      50% {
+        transform: scale(0.97);
+      }
+
+      100% {
+        transform: scale(1);
+      }
     }
 
     /* === SPトラッカー === */
@@ -366,6 +385,7 @@
         opacity: 0;
         transform: scale(0.3) rotate(-180deg);
       }
+
       to {
         opacity: 1;
         transform: scale(1) rotate(0deg);
@@ -373,8 +393,15 @@
     }
 
     @keyframes sp-glow {
-      0%, 100% { box-shadow: 0 0 8px rgba(255, 171, 0, 0.3); }
-      50% { box-shadow: 0 0 20px rgba(255, 171, 0, 0.6); }
+
+      0%,
+      100% {
+        box-shadow: 0 0 8px rgba(255, 171, 0, 0.3);
+      }
+
+      50% {
+        box-shadow: 0 0 20px rgba(255, 171, 0, 0.6);
+      }
     }
 
     /* === サマリーバー === */
@@ -399,12 +426,29 @@
       border-radius: 50%;
     }
 
-    .summary-dot.success { background: var(--success-green); box-shadow: 0 0 8px rgba(0, 230, 118, 0.5); }
-    .summary-dot.fail { background: var(--fail-red); box-shadow: 0 0 8px rgba(255, 82, 82, 0.5); }
-    .summary-dot.sp { background: var(--sp-gold); box-shadow: 0 0 8px rgba(255, 171, 0, 0.5); }
+    .summary-dot.success {
+      background: var(--success-green);
+      box-shadow: 0 0 8px rgba(0, 230, 118, 0.5);
+    }
 
-    .summary-item .count { color: var(--text-primary); }
-    .summary-item .label { color: var(--text-secondary); font-weight: 400; }
+    .summary-dot.fail {
+      background: var(--fail-red);
+      box-shadow: 0 0 8px rgba(255, 82, 82, 0.5);
+    }
+
+    .summary-dot.sp {
+      background: var(--sp-gold);
+      box-shadow: 0 0 8px rgba(255, 171, 0, 0.5);
+    }
+
+    .summary-item .count {
+      color: var(--text-primary);
+    }
+
+    .summary-item .label {
+      color: var(--text-secondary);
+      font-weight: 400;
+    }
 
     /* === 履歴 === */
     .history-list {
@@ -412,7 +456,8 @@
       display: flex;
       flex-direction: column;
       gap: 8px;
-      max-height: 500px; /* 約10件分表示できるように拡大 */
+      max-height: 500px;
+      /* 約10件分表示できるように拡大 */
       overflow-y: auto;
     }
 
@@ -437,8 +482,15 @@
     }
 
     @keyframes slide-in {
-      from { opacity: 0; transform: translateX(-12px); }
-      to { opacity: 1; transform: translateX(0); }
+      from {
+        opacity: 0;
+        transform: translateX(-12px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
     }
 
     .history-number {
@@ -535,9 +587,17 @@
       margin-bottom: 4px;
     }
 
-    .rule-item.success .rule-numbers { color: var(--success-green); }
-    .rule-item.fail .rule-numbers { color: var(--fail-red); }
-    .rule-item.sp .rule-numbers { color: var(--sp-gold); }
+    .rule-item.success .rule-numbers {
+      color: var(--success-green);
+    }
+
+    .rule-item.fail .rule-numbers {
+      color: var(--fail-red);
+    }
+
+    .rule-item.sp .rule-numbers {
+      color: var(--sp-gold);
+    }
 
     .rule-label {
       font-size: 0.7rem;
@@ -551,6 +611,7 @@
       gap: 6px;
       margin-bottom: 14px;
     }
+
     .rank-cost-item {
       text-align: center;
       padding: 8px 4px;
@@ -559,6 +620,7 @@
       border: 1px solid rgba(255, 255, 255, 0.04);
       cursor: default;
     }
+
     .rank-cost-item .rank-name {
       font-family: 'Orbitron', sans-serif;
       font-size: 0.75rem;
@@ -566,12 +628,14 @@
       color: var(--accent-purple);
       margin-bottom: 1px;
     }
+
     .rank-cost-item .rank-effect {
       font-family: 'Orbitron', sans-serif;
       font-size: 0.85rem;
       font-weight: 900;
       color: var(--success-green);
     }
+
     .rank-cost-item .rank-sp {
       font-size: 0.6rem;
       color: var(--sp-gold);
@@ -588,22 +652,26 @@
       position: relative;
       transition: all 0.3s;
     }
+
     .skill-slot.active-skill {
       border-color: var(--accent-purple);
       box-shadow: 0 0 12px rgba(179, 136, 255, 0.15);
     }
+
     .skill-slot-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
       margin-bottom: 8px;
     }
+
     .skill-slot-num {
       font-family: 'Orbitron', sans-serif;
       font-size: 0.65rem;
       color: var(--accent-purple);
       opacity: 0.7;
     }
+
     .skill-slot-delete {
       background: none;
       border: none;
@@ -614,29 +682,35 @@
       transition: all 0.2s;
       padding: 2px 6px;
     }
+
     .skill-slot-delete:hover {
       color: var(--fail-red);
       opacity: 1;
     }
+
     .skill-slot-row {
       display: flex;
       gap: 8px;
       align-items: flex-end;
       margin-bottom: 8px;
     }
+
     .skill-slot-field {
       display: flex;
       flex-direction: column;
       gap: 3px;
       flex: 1;
     }
+
     .skill-slot-field.rank-f {
       flex: 0 0 90px;
     }
+
     .skill-slot-field label {
       font-size: 0.65rem;
       color: var(--text-secondary);
     }
+
     .skill-slot-input {
       padding: 8px 10px;
       border: 1px solid rgba(179, 136, 255, 0.25);
@@ -648,10 +722,15 @@
       outline: none;
       transition: border-color 0.2s;
     }
+
     .skill-slot-input:focus {
       border-color: var(--accent-purple);
     }
-    .skill-slot-input::placeholder { color: rgba(159,168,218,0.35); }
+
+    .skill-slot-input::placeholder {
+      color: rgba(159, 168, 218, 0.35);
+    }
+
     .skill-slot-select {
       padding: 8px 10px;
       border: 1px solid rgba(179, 136, 255, 0.25);
@@ -669,6 +748,7 @@
       background-position: right 8px center;
       padding-right: 26px;
     }
+
     .skill-slot-info {
       display: flex;
       align-items: center;
@@ -676,15 +756,18 @@
       gap: 8px;
       margin-bottom: 8px;
     }
+
     .skill-slot-bonus {
       font-size: 0.75rem;
       color: var(--success-green);
       font-weight: 700;
     }
+
     .skill-slot-cost {
       font-size: 0.75rem;
       color: var(--sp-gold);
     }
+
     .skill-use-btn {
       width: 100%;
       padding: 10px;
@@ -700,10 +783,12 @@
       transition: all 0.2s;
       box-shadow: 0 2px 10px rgba(179, 136, 255, 0.2);
     }
+
     .skill-use-btn:hover {
       transform: translateY(-1px);
       box-shadow: 0 4px 16px rgba(179, 136, 255, 0.35);
     }
+
     .skill-use-btn:disabled {
       background: rgba(100, 100, 120, 0.3);
       color: rgba(159, 168, 218, 0.4);
@@ -711,12 +796,14 @@
       box-shadow: none;
       transform: none;
     }
+
     .skill-use-btn.used {
       background: rgba(0, 230, 118, 0.15);
       border: 1px solid rgba(0, 230, 118, 0.3);
       color: var(--success-green);
       pointer-events: none;
     }
+
     .slot-add-btn {
       width: 100%;
       padding: 12px;
@@ -731,11 +818,16 @@
       transition: all 0.2s;
       margin-bottom: 4px;
     }
+
     .slot-add-btn:hover {
       border-color: var(--accent-purple);
       background: rgba(179, 136, 255, 0.05);
     }
-    .slot-add-btn.hidden { display: none; }
+
+    .slot-add-btn.hidden {
+      display: none;
+    }
+
     .sp-insufficient {
       text-align: center;
       font-size: 0.75rem;
@@ -744,7 +836,10 @@
       opacity: 0;
       transition: opacity 0.3s;
     }
-    .sp-insufficient.show { opacity: 1; }
+
+    .sp-insufficient.show {
+      opacity: 1;
+    }
 
     /* ボーナスバッジ（結果エリア） */
     .bonus-badge {
@@ -760,6 +855,7 @@
       font-weight: 700;
       animation: die-appear 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
     }
+
     .bonus-badge .bonus-val {
       color: var(--success-green);
       font-family: 'Orbitron', sans-serif;
@@ -774,11 +870,16 @@
       max-height: 200px;
       overflow-y: auto;
     }
-    .cheat-log-list::-webkit-scrollbar { width: 4px; }
+
+    .cheat-log-list::-webkit-scrollbar {
+      width: 4px;
+    }
+
     .cheat-log-list::-webkit-scrollbar-thumb {
       background: rgba(179, 136, 255, 0.3);
       border-radius: 4px;
     }
+
     .cheat-log-item {
       display: flex;
       align-items: center;
@@ -789,6 +890,7 @@
       border: 1px solid rgba(255, 255, 255, 0.03);
       animation: slide-in 0.3s ease;
     }
+
     .cheat-log-rank {
       font-family: 'Orbitron', sans-serif;
       font-size: 0.7rem;
@@ -800,9 +902,25 @@
       min-width: 36px;
       text-align: center;
     }
-    .cheat-log-name { flex: 1; font-size: 0.8rem; color: var(--text-primary); }
-    .cheat-log-bonus { font-size: 0.7rem; color: var(--success-green); font-weight: 700; }
-    .cheat-log-sp { font-size: 0.7rem; color: var(--sp-gold); font-weight: 700; }
+
+    .cheat-log-name {
+      flex: 1;
+      font-size: 0.8rem;
+      color: var(--text-primary);
+    }
+
+    .cheat-log-bonus {
+      font-size: 0.7rem;
+      color: var(--success-green);
+      font-weight: 700;
+    }
+
+    .cheat-log-sp {
+      font-size: 0.7rem;
+      color: var(--sp-gold);
+      font-weight: 700;
+    }
+
     .cheat-log-empty {
       text-align: center;
       font-size: 0.8rem;
@@ -815,6 +933,7 @@
     .char-name-group {
       margin-bottom: 16px;
     }
+
     .char-name-label {
       font-size: 0.7rem;
       color: var(--text-secondary);
@@ -823,6 +942,7 @@
       margin-bottom: 6px;
       display: block;
     }
+
     .char-name-input {
       width: 100%;
       background: var(--bg-glass);
@@ -835,10 +955,12 @@
       outline: none;
       transition: border-color 0.3s, box-shadow 0.3s;
     }
+
     .char-name-input:focus {
       border-color: var(--accent-cyan);
       box-shadow: 0 0 12px rgba(0, 229, 255, 0.2);
     }
+
     .char-name-input::placeholder {
       color: var(--text-secondary);
       opacity: 0.5;
@@ -849,19 +971,22 @@
       flex-direction: column;
       gap: 10px;
     }
+
     .stat-row {
       display: flex;
       align-items: center;
       gap: 10px;
       background: var(--bg-glass);
-      border: 1px solid rgba(255,255,255,0.06);
+      border: 1px solid rgba(255, 255, 255, 0.06);
       border-radius: 12px;
       padding: 10px 14px;
       transition: border-color 0.3s, box-shadow 0.3s;
     }
+
     .stat-row:hover {
       border-color: rgba(0, 229, 255, 0.15);
     }
+
     .stat-icon {
       width: 36px;
       height: 36px;
@@ -872,28 +997,43 @@
       font-size: 1.1rem;
       flex-shrink: 0;
     }
-    .stat-icon.hp { background: rgba(255, 82, 82, 0.2); }
-    .stat-icon.agi { background: rgba(0, 229, 255, 0.2); }
-    .stat-icon.int { background: rgba(179, 136, 255, 0.2); }
-    .stat-icon.cha { background: rgba(255, 215, 64, 0.2); }
+
+    .stat-icon.hp {
+      background: rgba(255, 82, 82, 0.2);
+    }
+
+    .stat-icon.agi {
+      background: rgba(0, 229, 255, 0.2);
+    }
+
+    .stat-icon.int {
+      background: rgba(179, 136, 255, 0.2);
+    }
+
+    .stat-icon.cha {
+      background: rgba(255, 215, 64, 0.2);
+    }
+
     .stat-name {
       font-size: 0.85rem;
       font-weight: 700;
       color: var(--text-primary);
       min-width: 52px;
     }
+
     .stat-control {
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 6px;
     }
+
     .stat-btn {
       width: 28px;
       height: 28px;
       border-radius: 6px;
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.2);
       color: var(--text-primary);
       font-size: 1.2rem;
       cursor: pointer;
@@ -902,10 +1042,12 @@
       justify-content: center;
       transition: all 0.2s;
     }
+
     .stat-btn:active {
       transform: scale(0.9);
-      background: rgba(255,255,255,0.15);
+      background: rgba(255, 255, 255, 0.15);
     }
+
     .stat-value {
       width: 32px;
       font-size: 1.1rem;
@@ -914,10 +1056,11 @@
       color: var(--accent-cyan);
       text-align: center;
     }
+
     .stat-roll-btn {
       margin-left: auto;
-      background: linear-gradient(135deg, rgba(0,229,255,0.15), rgba(179,136,255,0.15));
-      border: 1px solid rgba(0,229,255,0.3);
+      background: linear-gradient(135deg, rgba(0, 229, 255, 0.15), rgba(179, 136, 255, 0.15));
+      border: 1px solid rgba(0, 229, 255, 0.3);
       border-radius: 10px;
       padding: 8px 14px;
       font-size: 0.75rem;
@@ -928,19 +1071,23 @@
       transition: all 0.3s;
       white-space: nowrap;
     }
+
     .stat-roll-btn:hover {
-      background: linear-gradient(135deg, rgba(0,229,255,0.3), rgba(179,136,255,0.3));
+      background: linear-gradient(135deg, rgba(0, 229, 255, 0.3), rgba(179, 136, 255, 0.3));
       box-shadow: 0 0 12px rgba(0, 229, 255, 0.2);
       transform: translateY(-1px);
     }
+
     .stat-roll-btn:active {
       transform: scale(0.95);
     }
+
     .stat-roll-btn:disabled {
       opacity: 0.3;
       cursor: not-allowed;
       transform: none;
     }
+
     .stat-roll-btn.rolling {
       animation: pulse 0.5s;
     }
@@ -952,6 +1099,7 @@
       gap: 14px;
       margin-bottom: 14px;
     }
+
     .hp-icon {
       width: 44px;
       height: 44px;
@@ -963,15 +1111,18 @@
       font-size: 1.3rem;
       flex-shrink: 0;
     }
+
     .hp-values {
       flex: 1;
     }
+
     .hp-numbers {
       display: flex;
       align-items: baseline;
       gap: 4px;
       margin-bottom: 6px;
     }
+
     .hp-current {
       font-family: 'Orbitron', sans-serif;
       font-size: 1.8rem;
@@ -979,29 +1130,35 @@
       color: var(--success-green);
       transition: color 0.3s;
     }
+
     .hp-current.danger {
       color: var(--fail-red);
     }
+
     .hp-current.warning {
       color: var(--accent-gold);
     }
+
     .hp-separator {
       font-size: 1rem;
       color: var(--text-secondary);
       margin: 0 2px;
     }
+
     .hp-max {
       font-family: 'Orbitron', sans-serif;
       font-size: 1rem;
       color: var(--text-secondary);
     }
+
     .hp-bar-container {
       width: 100%;
       height: 10px;
-      background: rgba(255,255,255,0.06);
+      background: rgba(255, 255, 255, 0.06);
       border-radius: 5px;
       overflow: hidden;
     }
+
     .hp-bar {
       height: 100%;
       background: linear-gradient(90deg, var(--success-green), #69f0ae);
@@ -1009,23 +1166,27 @@
       transition: width 0.5s ease, background 0.5s;
       width: 100%;
     }
+
     .hp-bar.danger {
       background: linear-gradient(90deg, var(--fail-red), #ff8a80);
     }
+
     .hp-bar.warning {
       background: linear-gradient(90deg, var(--accent-gold), #ffe082);
     }
+
     .hp-damage-row {
       display: flex;
       gap: 8px;
       align-items: center;
       flex-wrap: wrap;
     }
+
     .hp-damage-input {
       width: 100%;
       flex: 1 1 100%;
       background: var(--bg-glass);
-      border: 1px solid rgba(255,82,82,0.3);
+      border: 1px solid rgba(255, 82, 82, 0.3);
       border-radius: 10px;
       padding: 10px 14px;
       font-size: 1rem;
@@ -1036,19 +1197,22 @@
       appearance: textfield;
       -moz-appearance: textfield;
     }
+
     .hp-damage-input::-webkit-outer-spin-button,
     .hp-damage-input::-webkit-inner-spin-button {
       -webkit-appearance: none;
       margin: 0;
     }
+
     .hp-damage-input:focus {
       border-color: var(--fail-red);
       box-shadow: 0 0 8px rgba(255, 82, 82, 0.2);
     }
+
     .hp-damage-btn {
       flex: 1;
-      background: linear-gradient(135deg, rgba(255,82,82,0.2), rgba(255,82,82,0.1));
-      border: 1px solid rgba(255,82,82,0.4);
+      background: linear-gradient(135deg, rgba(255, 82, 82, 0.2), rgba(255, 82, 82, 0.1));
+      border: 1px solid rgba(255, 82, 82, 0.4);
       border-radius: 10px;
       padding: 10px 16px;
       font-size: 0.85rem;
@@ -1059,17 +1223,20 @@
       transition: all 0.3s;
       white-space: nowrap;
     }
+
     .hp-damage-btn:hover {
-      background: linear-gradient(135deg, rgba(255,82,82,0.35), rgba(255,82,82,0.2));
+      background: linear-gradient(135deg, rgba(255, 82, 82, 0.35), rgba(255, 82, 82, 0.2));
       box-shadow: 0 0 12px rgba(255, 82, 82, 0.2);
     }
+
     .hp-damage-btn:active {
       transform: scale(0.95);
     }
+
     .hp-heal-btn {
       flex: 1;
-      background: linear-gradient(135deg, rgba(0,230,118,0.2), rgba(0,230,118,0.1));
-      border: 1px solid rgba(0,230,118,0.4);
+      background: linear-gradient(135deg, rgba(0, 230, 118, 0.2), rgba(0, 230, 118, 0.1));
+      border: 1px solid rgba(0, 230, 118, 0.4);
       border-radius: 10px;
       padding: 10px 16px;
       font-size: 0.85rem;
@@ -1080,13 +1247,16 @@
       transition: all 0.3s;
       white-space: nowrap;
     }
+
     .hp-heal-btn:hover {
-      background: linear-gradient(135deg, rgba(0,230,118,0.35), rgba(0,230,118,0.2));
+      background: linear-gradient(135deg, rgba(0, 230, 118, 0.35), rgba(0, 230, 118, 0.2));
       box-shadow: 0 0 12px rgba(0, 230, 118, 0.2);
     }
+
     .hp-heal-btn:active {
       transform: scale(0.95);
     }
+
     .hp-formula {
       font-size: 0.7rem;
       color: var(--text-secondary);
@@ -1097,37 +1267,153 @@
 
     /* === レスポンシブ === */
     @media (max-width: 480px) {
-      .container { padding: 12px 8px; }
-      .card { padding: 16px 12px; border-radius: 12px; }
-      .header h1 { font-size: 1.2rem; }
-      .header .subtitle { font-size: 0.75rem; }
-      .die { width: 48px; height: 48px; font-size: 1.3rem; border-radius: 10px; }
-      .dice-count-display { font-size: 2rem; }
-      .dice-count-btn { width: 40px; height: 40px; font-size: 1.2rem; }
-      .roll-btn { padding: 14px; font-size: 1rem; letter-spacing: 2px; }
-      .sp-value { font-size: 1.6rem; }
-      .sp-icon { width: 36px; height: 36px; font-size: 1rem; }
-      .skill-slot-row { flex-direction: column; }
-      .skill-slot-field.rank-f { flex: 1; }
-      .rank-cost-table { gap: 4px; }
-      .rank-cost-item { padding: 6px 2px; }
-      .rank-cost-item .rank-name { font-size: 0.65rem; }
-      .rank-cost-item .rank-effect { font-size: 0.75rem; }
-      .summary-bar { gap: 14px; }
-      .summary-item { font-size: 0.75rem; }
-      .history-die { width: 24px; height: 24px; font-size: 0.7rem; }
-      .rules-grid { gap: 6px; }
-      .rule-numbers { font-size: 0.9rem; }
-      .card-title { font-size: 0.7rem; letter-spacing: 1px; }
-      .stat-row { padding: 8px 10px; gap: 8px; }
-      .stat-icon { width: 30px; height: 30px; font-size: 0.9rem; }
-      .stat-name { font-size: 0.75rem; min-width: 44px; }
-      .stat-input { width: 48px; padding: 6px; font-size: 1rem; }
-      .stat-roll-btn { padding: 6px 10px; font-size: 0.7rem; }
-      .char-name-input { font-size: 1rem; padding: 10px 12px; }
-      .hp-current { font-size: 1.4rem; }
-      .hp-damage-btn, .hp-heal-btn { padding: 8px 12px; font-size: 0.8rem; }
-      .hp-damage-input { padding: 8px 10px; font-size: 0.9rem; }
+      .container {
+        padding: 12px 8px;
+      }
+
+      .card {
+        padding: 16px 12px;
+        border-radius: 12px;
+      }
+
+      .header h1 {
+        font-size: 1.2rem;
+      }
+
+      .header .subtitle {
+        font-size: 0.75rem;
+      }
+
+      .die {
+        width: 48px;
+        height: 48px;
+        font-size: 1.3rem;
+        border-radius: 10px;
+      }
+
+      .dice-count-display {
+        font-size: 2rem;
+      }
+
+      .dice-count-btn {
+        width: 40px;
+        height: 40px;
+        font-size: 1.2rem;
+      }
+
+      .roll-btn {
+        padding: 14px;
+        font-size: 1rem;
+        letter-spacing: 2px;
+      }
+
+      .sp-value {
+        font-size: 1.6rem;
+      }
+
+      .sp-icon {
+        width: 36px;
+        height: 36px;
+        font-size: 1rem;
+      }
+
+      .skill-slot-row {
+        flex-direction: column;
+      }
+
+      .skill-slot-field.rank-f {
+        flex: 1;
+      }
+
+      .rank-cost-table {
+        gap: 4px;
+      }
+
+      .rank-cost-item {
+        padding: 6px 2px;
+      }
+
+      .rank-cost-item .rank-name {
+        font-size: 0.65rem;
+      }
+
+      .rank-cost-item .rank-effect {
+        font-size: 0.75rem;
+      }
+
+      .summary-bar {
+        gap: 14px;
+      }
+
+      .summary-item {
+        font-size: 0.75rem;
+      }
+
+      .history-die {
+        width: 24px;
+        height: 24px;
+        font-size: 0.7rem;
+      }
+
+      .rules-grid {
+        gap: 6px;
+      }
+
+      .rule-numbers {
+        font-size: 0.9rem;
+      }
+
+      .card-title {
+        font-size: 0.7rem;
+        letter-spacing: 1px;
+      }
+
+      .stat-row {
+        padding: 8px 10px;
+        gap: 8px;
+      }
+
+      .stat-icon {
+        width: 30px;
+        height: 30px;
+        font-size: 0.9rem;
+      }
+
+      .stat-name {
+        font-size: 0.75rem;
+        min-width: 44px;
+      }
+
+      .stat-input {
+        width: 48px;
+        padding: 6px;
+        font-size: 1rem;
+      }
+
+      .stat-roll-btn {
+        padding: 6px 10px;
+        font-size: 0.7rem;
+      }
+
+      .char-name-input {
+        font-size: 1rem;
+        padding: 10px 12px;
+      }
+
+      .hp-current {
+        font-size: 1.4rem;
+      }
+
+      .hp-damage-btn,
+      .hp-heal-btn {
+        padding: 8px 12px;
+        font-size: 0.8rem;
+      }
+
+      .hp-damage-input {
+        padding: 8px 10px;
+        font-size: 0.9rem;
+      }
     }
 
     /* === チャット・履歴エリア === */
@@ -1136,20 +1422,23 @@
       gap: 8px;
       margin-bottom: 15px;
     }
+
     .chat-input {
       flex: 1;
       padding: 10px 12px;
       border-radius: 8px;
       background: var(--bg-glass);
-      border: 1px solid rgba(255,255,255,0.2);
+      border: 1px solid rgba(255, 255, 255, 0.2);
       color: var(--text-primary);
       font-size: 0.9rem;
       outline: none;
       transition: border-color 0.2s;
     }
+
     .chat-input:focus {
       border-color: var(--accent-cyan);
     }
+
     .btn-chat-send {
       background: var(--accent-cyan);
       color: #000;
@@ -1161,10 +1450,13 @@
       font-size: 0.85rem;
       transition: transform 0.1s;
     }
-    .btn-chat-send:active { transform: scale(0.95); }
-    
+
+    .btn-chat-send:active {
+      transform: scale(0.95);
+    }
+
     .chat-message-item {
-      background: rgba(0,229,255,0.05);
+      background: rgba(0, 229, 255, 0.05);
       border-left: 3px solid var(--accent-cyan);
       padding: 10px 12px;
       margin-bottom: 8px;
@@ -1174,11 +1466,13 @@
       gap: 4px;
       animation: slideIn 0.3s ease forwards;
     }
+
     .chat-author {
       font-size: 0.75rem;
       color: var(--accent-cyan);
       font-weight: bold;
     }
+
     .chat-text {
       font-size: 0.9rem;
       word-break: break-all;
@@ -1187,15 +1481,17 @@
 
     /* === ルーム接続 === */
     .room-card {
-      background: linear-gradient(135deg, rgba(0,229,255,0.08), rgba(179,136,255,0.08));
-      border: 1px solid rgba(0,229,255,0.25);
+      background: linear-gradient(135deg, rgba(0, 229, 255, 0.08), rgba(179, 136, 255, 0.08));
+      border: 1px solid rgba(0, 229, 255, 0.25);
     }
+
     .room-row {
       display: flex;
       gap: 8px;
       align-items: center;
       flex-wrap: wrap;
     }
+
     .room-input {
       flex: 1;
       min-width: 120px;
@@ -1211,10 +1507,12 @@
       outline: none;
       text-transform: uppercase;
     }
+
     .room-input:focus {
       border-color: var(--accent-cyan);
-      box-shadow: 0 0 12px rgba(0,229,255,0.2);
+      box-shadow: 0 0 12px rgba(0, 229, 255, 0.2);
     }
+
     .room-input::placeholder {
       font-family: 'Noto Sans JP', sans-serif;
       color: var(--text-secondary);
@@ -1222,6 +1520,7 @@
       letter-spacing: 0;
       text-transform: none;
     }
+
     .room-btn {
       background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
       border: none;
@@ -1235,16 +1534,22 @@
       transition: all 0.3s;
       white-space: nowrap;
     }
+
     .room-btn:hover {
-      box-shadow: 0 0 16px rgba(0,229,255,0.4);
+      box-shadow: 0 0 16px rgba(0, 229, 255, 0.4);
       transform: translateY(-1px);
     }
-    .room-btn:active { transform: scale(0.95); }
+
+    .room-btn:active {
+      transform: scale(0.95);
+    }
+
     .room-btn:disabled {
       opacity: 0.4;
       cursor: not-allowed;
       transform: none;
     }
+
     .room-status {
       width: 100%;
       display: flex;
@@ -1254,22 +1559,26 @@
       color: var(--text-secondary);
       margin-top: 4px;
     }
+
     .room-status-dot {
       width: 8px;
       height: 8px;
       border-radius: 50%;
       background: var(--text-secondary);
     }
+
     .room-status-dot.connected {
       background: var(--success-green);
       box-shadow: 0 0 6px var(--success-green);
     }
+
     .room-status-dot.disconnected {
       background: var(--fail-red);
     }
+
     .room-disconnect-btn {
       background: none;
-      border: 1px solid rgba(255,82,82,0.4);
+      border: 1px solid rgba(255, 82, 82, 0.4);
       border-radius: 8px;
       padding: 4px 10px;
       font-size: 0.7rem;
@@ -1278,23 +1587,28 @@
       font-family: 'Noto Sans JP', sans-serif;
       margin-left: auto;
     }
+
     .room-disconnect-btn:hover {
-      background: rgba(255,82,82,0.1);
+      background: rgba(255, 82, 82, 0.1);
     }
 
     /* === コモンパーツ === */
     .common-parts-list {
-      display: flex; flex-direction: column; gap: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
     }
+
     .common-part-item {
-      background: rgba(0,229,255,0.05);
-      border: 1px solid rgba(0,229,255,0.2);
+      background: rgba(0, 229, 255, 0.05);
+      border: 1px solid rgba(0, 229, 255, 0.2);
       border-radius: 8px;
       padding: 10px;
       display: flex;
       flex-direction: column;
       gap: 6px;
     }
+
     .common-part-select {
       background: var(--bg-glass);
       color: var(--text-primary);
@@ -1305,23 +1619,28 @@
       outline: none;
       width: 100%;
     }
+
     .common-part-select:focus {
       border-color: var(--accent-cyan);
     }
+
     .common-part-desc {
       font-size: 0.75rem;
       color: var(--text-secondary);
       line-height: 1.4;
     }
+
     .common-part-desc strong {
       color: var(--accent-cyan);
     }
+
     .common-part-cost {
       color: var(--accent-purple);
       font-weight: bold;
     }
   </style>
 </head>
+
 <body>
   <div class="container">
     <!-- ヘッダー -->
@@ -1345,13 +1664,16 @@
 
     <!-- キャラクター情報 -->
     <div class="card">
-      <div class="card-title" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+      <div class="card-title"
+        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
         <span>👤 キャラクター情報</span>
         <span id="creation-points" style="color: var(--accent-cyan); font-size: 0.8rem;">残り作成ポイント: 100</span>
       </div>
-      <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 12px; font-size: 0.8rem;">
+      <div
+        style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 12px; font-size: 0.8rem;">
         <label for="extra-creation-points" style="margin-right: 8px; color: var(--text-secondary);">追加作成ポイント</label>
-        <input type="number" id="extra-creation-points" value="0" min="0" style="width: 60px; padding: 4px; border-radius: 4px; border: 1px solid var(--surface-light); background: rgba(0,0,0,0.2); color: var(--text-primary); text-align: right;">
+        <input type="number" id="extra-creation-points" value="0" min="0"
+          style="width: 60px; padding: 4px; border-radius: 4px; border: 1px solid var(--surface-light); background: rgba(0,0,0,0.2); color: var(--text-primary); text-align: right;">
       </div>
       <div class="char-name-group">
         <label class="char-name-label">キャラクター名</label>
@@ -1458,7 +1780,7 @@
     </div>
 
     <!-- ロールボタン -->
-    <button class="roll-btn" id="btn-roll">🎲  ダイスを振る</button>
+    <button class="roll-btn" id="btn-roll">🎲 ダイスを振る</button>
 
     <!-- SPトラッカー -->
     <div class="card" style="margin-top: 20px;">
@@ -1481,7 +1803,9 @@
 
     <!-- コモンパーツ -->
     <div class="card" id="common-parts-card">
-      <div class="card-title">🎒 コモンパーツ <span style="font-size:0.65rem;color:var(--text-secondary);text-transform:none;letter-spacing:0;">（最大6個）</span></div>
+      <div class="card-title">🎒 コモンパーツ <span
+          style="font-size:0.65rem;color:var(--text-secondary);text-transform:none;letter-spacing:0;">（最大6個）</span>
+      </div>
       <div class="common-parts-list" id="common-parts-list">
         <!-- JSで6枠生成 -->
       </div>
@@ -1490,7 +1814,8 @@
     <!-- チートスキル -->
     <div class="card">
       <div class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
-        <span>🔮 チートスキル <span style="font-size:0.65rem;color:var(--text-secondary);text-transform:none;letter-spacing:0;">（最大3つ）</span></span>
+        <span>🔮 チートスキル <span
+            style="font-size:0.65rem;color:var(--text-secondary);text-transform:none;letter-spacing:0;">（最大3つ）</span></span>
         <span id="cheat-points-display" style="color: var(--accent-purple); font-size: 0.8rem;">残りチートPt: 3</span>
       </div>
 
@@ -1523,11 +1848,31 @@
 
       <!-- ランク効果一覧 -->
       <div class="rank-cost-table">
-        <div class="rank-cost-item"><div class="rank-name">SSS</div><div class="rank-effect">+10</div><div class="rank-sp">SP 3</div></div>
-        <div class="rank-cost-item"><div class="rank-name">SS</div><div class="rank-effect">+7</div><div class="rank-sp">SP 2</div></div>
-        <div class="rank-cost-item"><div class="rank-name">S</div><div class="rank-effect">+5</div><div class="rank-sp">SP 1</div></div>
-        <div class="rank-cost-item"><div class="rank-name">A</div><div class="rank-effect">+3</div><div class="rank-sp">3回無料</div></div>
-        <div class="rank-cost-item"><div class="rank-name">B</div><div class="rank-effect">+2</div><div class="rank-sp">1つ無料</div></div>
+        <div class="rank-cost-item">
+          <div class="rank-name">SSS</div>
+          <div class="rank-effect">+10</div>
+          <div class="rank-sp">SP 3</div>
+        </div>
+        <div class="rank-cost-item">
+          <div class="rank-name">SS</div>
+          <div class="rank-effect">+7</div>
+          <div class="rank-sp">SP 2</div>
+        </div>
+        <div class="rank-cost-item">
+          <div class="rank-name">S</div>
+          <div class="rank-effect">+5</div>
+          <div class="rank-sp">SP 1</div>
+        </div>
+        <div class="rank-cost-item">
+          <div class="rank-name">A</div>
+          <div class="rank-effect">+3</div>
+          <div class="rank-sp">3回無料</div>
+        </div>
+        <div class="rank-cost-item">
+          <div class="rank-name">B</div>
+          <div class="rank-effect">+2</div>
+          <div class="rank-sp">1つ無料</div>
+        </div>
       </div>
 
       <!-- スキルスロット -->
@@ -1621,7 +1966,7 @@
       { name: '鎧', cost: 5, stat: 'ー', effect: 'HP＋５。攻撃を受ける時にダメージを防ぐ鎧。', modifiers: { hp: 5 } },
       { name: 'ハンドガン', cost: 10, stat: '敏捷力', effect: '戦闘で判定成功数＋１。戦闘イベント時に限界ラウンドを超えるまでダメージを受けない。銃弾を放つ武器。使用するたびにSPを１点使用する。', spCost: 1, successBonus: { agi: 1 } },
       { name: 'サブマシンガン', cost: 15, stat: '敏捷力', effect: '出目3も成功になる。戦闘イベント時に限界ラウンドを超えるまでダメージを受けない。大量の銃弾を放つ武器。使用するたびにSPを１点使用する。', successThreshold: 3, spCost: 1 },
-      { name: 'スマートフォン', cost: 5, stat: '知力', effect: '戦闘以外のイベント判定＋２d。回線が繋がらないスマートフォン。充電は常に満タン。チートスキルが次元を超えるものなら回線が繋がるかもしれない。', diceBonus: { int: 2, cha: 2 } },
+      { name: 'スマートフォン', cost: 5, stat: '知力', effect: '戦闘イベント以外の判定＋２d。回線が繋がらないスマートフォン。充電は常に満タン。チートスキルが次元を超えるものなら回線が繋がるかもしれない。', diceBonus: { int: 2, cha: 2 } },
       { name: '攻撃魔法', cost: 10, stat: '知力', effect: '戦闘で判定＋２d。戦闘イベント時に限界ラウンドを超えるまでダメージを受けない。魔力を攻撃に変える。SPを1点使用する。', diceBonus: { int: 2 }, spCost: 1 },
       { name: '防御魔法', cost: 10, stat: '知力', effect: '戦闘で防御判定＋２d。戦闘イベント時に限界ラウンドを超えるまでダメージを受けない。仲間に対する攻撃を防ぐことができる。魔力を防御に変える。SPを1点使用する。', diceBonus: { int: 2 }, spCost: 1 },
       { name: '回復魔法', cost: 10, stat: '知力', effect: 'ダメージを（消費したSP＋成功数）点回復することができる。戦闘イベント時に限界ラウンドを超えるまでダメージを受けない。魔力を回復に変える。SPを1点使用する。', spCost: 1 },
@@ -1678,7 +2023,7 @@
     function loadFromStorage() {
       const raw = localStorage.getItem(SAVE_KEY);
       if (!raw) return null;
-      try { return JSON.parse(raw); } catch(e) { return null; }
+      try { return JSON.parse(raw); } catch (e) { return null; }
     }
 
     // === ルーム（データ共有）接続ロジック ===
@@ -1946,7 +2291,7 @@
           timestamp: firebase.database.ServerValue.TIMESTAMP
         });
       }
-      
+
       const firebaseKey = newRef ? newRef.key : '';
       lastRollData = {
         firebaseKey: firebaseKey,
@@ -2021,7 +2366,7 @@
         if (val === 1) cls = 'sp-trigger';
         html += `<div class="die ${cls}" style="animation-delay: ${i * 0.08}s">${val}</div>`;
       });
-      
+
       // チートボーナス分の確定成功ダイスを描画
       for (let i = 0; i < bonus; i++) {
         const delay = (results.length + i) * 0.08;
@@ -2033,7 +2378,7 @@
         const delay = (results.length + bonus + i) * 0.08;
         html += `<div class="die success" style="animation-delay: ${delay}s; border-color: #ff9800; color: #ff9800; box-shadow: 0 0 12px rgba(255,152,0,0.4); text-shadow: 0 0 8px rgba(255,152,0,0.6);">★</div>`;
       }
-      
+
       html += '</div>';
 
       // ボーナスバッジ
@@ -2065,19 +2410,19 @@
       const li = document.createElement('li');
       li.className = 'history-item';
       li.id = firebaseKey ? `history-item-${firebaseKey}` : `history-item-local-${num}`;
-      
+
       let diceHtml = '';
       results.forEach(val => {
         let cls = val >= (getSuccessThreshold()) ? 'success' : 'fail';
         if (val === 1) cls = 'sp-trigger';
         diceHtml += `<span class="history-die ${cls}">${val}</span>`;
       });
-      
+
       // チートボーナス分の確定成功ダイスを履歴に追加
       for (let i = 0; i < bonus; i++) {
         diceHtml += `<span class="history-die success" style="border-color: var(--accent-purple); color: var(--accent-purple); background: rgba(179,136,255,0.15);">★</span>`;
       }
-      
+
       const spText = spGained > 0 ? `SP+${spGained}` : '';
       const bonusText = bonus > 0 ? `<span style="color:var(--accent-purple);font-size:0.65rem;margin-left:4px;">+${bonus}</span>` : '';
       const nameText = charName ? `<span style="font-size:0.75rem; color:var(--text-secondary); margin-right:8px; min-width:60px; max-width:100px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${charName}</span>` : '';
@@ -2095,23 +2440,23 @@
       if (!firebaseKey) return;
       const li = document.getElementById(`history-item-${firebaseKey}`);
       if (!li) return;
-      
+
       let diceHtml = '';
       data.results.forEach(val => {
         let cls = val >= (getSuccessThreshold()) ? 'success' : 'fail';
         if (val === 1) cls = 'sp-trigger';
         diceHtml += `<span class="history-die ${cls}">${val}</span>`;
       });
-      
+
       // チートボーナス分の確定成功ダイスを履歴に追加
       for (let i = 0; i < data.bonus; i++) {
         diceHtml += `<span class="history-die success" style="border-color: var(--accent-purple); color: var(--accent-purple); background: rgba(179,136,255,0.15);">★</span>`;
       }
-      
+
       const spText = data.spGained > 0 ? `SP+${data.spGained}` : '';
       const bonusText = data.bonus > 0 ? `<span style="color:var(--accent-purple);font-size:0.65rem;margin-left:4px;">+${data.bonus}</span>` : '';
       const nameText = data.charName ? `<span style="font-size:0.75rem; color:var(--text-secondary); margin-right:8px; min-width:60px; max-width:100px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${data.charName}</span>` : '';
-      
+
       const numSpan = li.querySelector('.history-number');
       const numHtml = numSpan ? numSpan.outerHTML : '';
 
@@ -2143,7 +2488,7 @@
       const text = elChatInput.value.trim();
       if (!text) return;
       const charName = document.getElementById('char-name').value || '名無し';
-      
+
       let newRef = null;
       if (currentRoomId && firebaseRef) {
         newRef = firebaseRef.push({
@@ -2154,7 +2499,7 @@
           timestamp: firebase.database.ServerValue.TIMESTAMP
         });
       }
-      
+
       const key = newRef ? newRef.key : '';
       addChatItem(charName, text, key);
       elChatInput.value = '';
@@ -2309,10 +2654,10 @@
       const rank = slot.rank;
       const actual = getActualCost(rank);
       const costEl = document.querySelector(`[data-cost-id="${slotId}"]`);
-      
+
       const btnUse = document.querySelector(`[data-use-id="${slotId}"]`);
       const btnFree = document.querySelector(`[data-use-free-id="${slotId}"]`);
-      
+
       let remainingText = '';
       let hasFreeUse = false;
 
@@ -2346,7 +2691,7 @@
     function bindSlotEvents(slotId) {
       const baseRankSelect = document.querySelector(`[data-base-rank-id="${slotId}"]`);
       const rankSelect = document.querySelector(`[data-rank-id="${slotId}"]`);
-      
+
       const handleRankChange = (e) => {
         const target = e.target;
         const bRank = baseRankSelect.value;
@@ -2360,7 +2705,7 @@
         } else {
           rankSelect.disabled = false;
         }
-        
+
         // --- ランク制限: 最終ランクは取得ベースランクより下回れない ---
         const rOrder = { B: 1, A: 2, S: 3, SS: 4, SSS: 5 };
         if (bRank !== 'none' && rOrder[fRank] < rOrder[bRank]) {
@@ -2379,7 +2724,7 @@
         }
 
         document.querySelector(`[data-bonus-id="${slotId}"]`).textContent = `効果: 成功ダイス +${RANK_BONUS[rankSelect.value]}`;
-        
+
         skillSlots.forEach(s => { if (!s.used) updateSlotCostDisplay(s.id); });
         updateAllSlotButtons();
         saveToStorage();
@@ -2423,7 +2768,7 @@
       // isFreeがtrue、または本来のコストが0(Bランクの初回など)なら無料
       let actualCost = getActualCost(rank);
       if (isFree) actualCost = 0;
-      
+
       const bonus = RANK_BONUS[rank];
 
       if (spTotal < actualCost) {
@@ -2439,7 +2784,7 @@
         elSpTotal.textContent = spTotal;
 
         slot.used = true;
-        
+
         // 無料枠を使用した場合は回数を消費。SPを払った場合は消費しない
         if (isFree && RANK_FREE_USES_CUMULATIVE[rank] > 0) {
           rankUseCounts[rank]++;
@@ -2463,7 +2808,7 @@
             finalSuccess: lastRollData.finalSuccess
           });
         }
-        
+
         // 自分のローカル履歴も直接更新
         const localLiId = lastRollData.firebaseKey ? lastRollData.firebaseKey : `local-${rollNumber}`;
         updateHistoryItem(localLiId, lastRollData);
@@ -2473,7 +2818,7 @@
         btn.classList.add('used');
         const costText = actualCost === 0 ? '無料' : `-${actualCost}SP`;
         btn.textContent = `✓ 適用済（直前のロールに+${bonus}しました）`;
-        
+
         const btnFree = document.querySelector(`[data-use-free-id="${slotId}"]`);
         if (btnFree) {
           btnFree.style.display = 'none';
@@ -2481,7 +2826,7 @@
 
         const slotEl = document.getElementById(`slot-${slotId}`);
         slotEl.classList.add('active-skill');
-        
+
         // 入力を一時無効化
         const nameInput = document.querySelector(`[data-name-id="${slotId}"]`);
         const rankSelect = document.querySelector(`[data-rank-id="${slotId}"]`);
@@ -2519,7 +2864,7 @@
       btn.classList.add('used');
       const costText = actualCost === 0 ? '無料' : `-${actualCost}SP`;
       btn.textContent = `✓ 発動中（成功+${bonus}）次のロールに適用`;
-      
+
       const btnFree = document.querySelector(`[data-use-free-id="${slotId}"]`);
       if (btnFree) {
         btnFree.style.display = 'none';
@@ -2835,7 +3180,7 @@
         // 履歴にも追加 (Firebase共有 + ローカルUI反映)
         const charName = document.getElementById('char-name').value || '名無し';
         const displayCharName = `${charName}(${STAT_NAMES[key]})`;
-        
+
         let newRef = null;
         if (currentRoomId && firebaseRef) {
           newRef = firebaseRef.push({
@@ -2848,7 +3193,7 @@
             timestamp: firebase.database.ServerValue.TIMESTAMP
           });
         }
-        
+
         const firebaseKey = newRef ? newRef.key : '';
         lastRollData = {
           firebaseKey: firebaseKey,
@@ -2886,7 +3231,7 @@
         if (val === 1) cls = 'sp-trigger';
         html += `<div class="die ${cls}" style="animation-delay: ${i * 0.08}s">${val}</div>`;
       });
-      
+
       // チートボーナス分の確定成功ダイスを描画
       for (let i = 0; i < bonus; i++) {
         const delay = (results.length + i) * 0.08;
@@ -2904,7 +3249,7 @@
         const delay = (results.length + bonus + partsSuccessBonus + i) * 0.08;
         html += `<div class="die success" style="animation-delay: ${delay}s; border-color: #ff9800; color: #ff9800; box-shadow: 0 0 12px rgba(255,152,0,0.4); text-shadow: 0 0 8px rgba(255,152,0,0.6);">★</div>`;
       }
-      
+
       html += '</div>';
 
       if (bonus > 0) {
@@ -2988,7 +3333,7 @@
             const nameInput = document.querySelector(`[data-name-id="${slot.id}"]`);
             const baseRankSelect = document.querySelector(`[data-base-rank-id="${slot.id}"]`);
             const rankSelect = document.querySelector(`[data-rank-id="${slot.id}"]`);
-            
+
             if (nameInput) nameInput.value = cs.name || '';
             if (baseRankSelect) {
               baseRankSelect.value = cs.baseRank || 'none';
@@ -2999,18 +3344,18 @@
               rankSelect.dataset.prevVal = rankSelect.value;
               rankSelect.disabled = (baseRankSelect && baseRankSelect.value === 'none');
             }
-            
+
             slot.name = cs.name || '';
             slot.baseRank = cs.baseRank || 'none';
             slot.rank = cs.rank || 'B';
-            
+
             document.querySelector(`[data-bonus-id="${slot.id}"]`).textContent = `効果: 成功ダイス +${RANK_BONUS[slot.rank]}`;
             updateSlotCostDisplay(slot.id);
           });
           updateAllSlotButtons();
         }
         // コモンパーツスロットの復元は、後でUI生成時に行うためここではスキップします。
-        
+
         // 追加作成ポイントの復元
         if (saved.extraCreationPoints !== undefined) {
           const elExtraCp = document.getElementById('extra-creation-points');
@@ -3033,7 +3378,7 @@
         elRoomInput.value = savedRoomId;
         joinRoom(savedRoomId);
       }
-      
+
       // コモンパーツUIの生成
       const elPartsList = document.getElementById('common-parts-list');
       if (elPartsList) {
@@ -3054,7 +3399,7 @@
           elPartsList.appendChild(div);
 
           const sel = div.querySelector('select');
-          
+
           // 復元処理
           if (saved && saved.commonParts && saved.commonParts[i] !== undefined) {
             sel.selectedIndex = saved.commonParts[i];
@@ -3070,7 +3415,7 @@
             if (String(idx) === target.dataset.prevIdx) return;
             console.log(`[コモンパーツ] スロット${i}: ${COMMON_PARTS[idx].name} 選択 (idx=${idx})`);
             updatePartDesc(i);
-            
+
             const pts = calculateCreationPoints();
             target.dataset.prevIdx = String(target.selectedIndex);
             // コモンパーツ変更時にHP・SPを再計算
@@ -3120,13 +3465,13 @@
 
       // --- 作成ポイント(CP) ---
       let totalSpent = 0;
-      
+
       // 能力値
       document.querySelectorAll('.stat-value').forEach(el => {
         let val = parseInt(el.dataset.val) || STAT_BASE_VALUE;
         if (val < STAT_BASE_VALUE) val = STAT_BASE_VALUE;
         if (val > STAT_MAX_VALUE) val = STAT_MAX_VALUE;
-        
+
         let statSpent = 0;
         for (let i = STAT_BASE_VALUE + 1; i <= val; i++) {
           statSpent += (i - STAT_BASE_VALUE) * POINT_COST_PER_STAT;
@@ -3172,7 +3517,7 @@
         const currentB = bSel.value;
         const currentF = fSel.value;
         const currentBaseCost = parseInt(bSel.options[bSel.selectedIndex]?.dataset.cost) || 0;
-        
+
         let currentUpgradeCost = 0;
         if (currentB !== 'none' && UPGRADE_COST[currentB] !== undefined && UPGRADE_COST[currentF] !== undefined) {
           currentUpgradeCost = UPGRADE_COST[currentF] - UPGRADE_COST[currentB];
@@ -3205,15 +3550,15 @@
             opt.disabled = false; // 選択中は有効
             return;
           }
-          
+
           let newUpgradeCost = UPGRADE_COST[optRank] - UPGRADE_COST[currentB];
           if (newUpgradeCost < 0) newUpgradeCost = 0;
           const additionalCpCost = newUpgradeCost - currentUpgradeCost;
-          
+
           opt.disabled = (additionalCpCost > cpRemaining);
         });
       });
-      
+
       return { cp: cpRemaining, chp: chpRemaining };
     }
 
@@ -3227,31 +3572,31 @@
         const targetEl = document.getElementById(targetId);
         let val = parseInt(targetEl.dataset.val) || STAT_BASE_VALUE;
         const prevVal = val;
-        
+
         if (e.currentTarget.classList.contains('plus')) {
           val++;
         } else {
           val--;
         }
-        
+
         // 範囲チェック
         if (val < STAT_BASE_VALUE) val = STAT_BASE_VALUE;
         if (val > STAT_MAX_VALUE) val = STAT_MAX_VALUE;
-        
+
         // 変更がない場合は何もしない
         if (val === prevVal) return;
-        
+
         // 一旦値を適用してから計算
         targetEl.dataset.val = val;
         targetEl.textContent = val;
-        
+
         const pts = calculateCreationPoints();
-        
+
         // 判定ボタンの有効化更新
         const key = targetId.replace('stat-', '');
         const rollBtn = document.querySelector(`[data-stat-key="${key}"]`);
         if (rollBtn) rollBtn.disabled = val <= 0;
-        
+
         // 知力変更時はSPを知力と等しくする（必要に応じて上書き）
         if (key === 'int') {
           spTotal = val;
@@ -3262,7 +3607,7 @@
         if (key === 'hp') {
           updateHpFromStat(val);
         }
-        
+
         saveToStorage();
       });
     });
@@ -3273,13 +3618,13 @@
 
     // HP変更時に保存（renderHp内から呼ぶ代わりに、renderHpの後に保存）
     const origRenderHp = renderHp;
-    renderHp = function() {
+    renderHp = function () {
       origRenderHp();
       saveToStorage();
     };
     // チートスキル変更時の保存（ランク変更・名前変更）
     const origBindSlotEvents = bindSlotEvents;
-    bindSlotEvents = function(slotId) {
+    bindSlotEvents = function (slotId) {
       origBindSlotEvents(slotId);
       const rankSelect = document.querySelector(`[data-rank-id="${slotId}"]`);
       const nameInput = document.querySelector(`[data-name-id="${slotId}"]`);
@@ -3288,5 +3633,5 @@
     };
   </script>
 </body>
-</html>
 
+</html>
