@@ -1888,6 +1888,12 @@
 
     // === ダイスを振る ===
     elBtnRoll.addEventListener('click', () => {
+      // SP消費パーツ装備時のSP不足チェック
+      const spCostCheck = getCommonPartsSpCost();
+      if (spCostCheck > 0 && spTotal < spCostCheck) {
+        alert(`SPが足りません（必要: ${spCostCheck} / 残り: ${spTotal}）`);
+        return;
+      }
       elBtnRoll.classList.add('rolling');
       setTimeout(() => elBtnRoll.classList.remove('rolling'), 600);
 
@@ -2733,6 +2739,13 @@
         const input = document.getElementById(`stat-${key}`);
         const baseDiceNum = parseInt(input.dataset.val) || 0;
         if (baseDiceNum <= 0) return;
+
+        // SP消費パーツ装備時のSP不足チェック
+        const spCostCheck = getCommonPartsSpCost();
+        if (spCostCheck > 0 && spTotal < spCostCheck) {
+          alert(`SPが足りません（必要: ${spCostCheck} / 残り: ${spTotal}）`);
+          return;
+        }
 
         // コモンパーツのダイスボーナスを加算
         const partsBonus = getCommonPartsDiceBonus(key);
