@@ -1638,6 +1638,77 @@
       color: var(--accent-purple);
       font-weight: bold;
     }
+    /* === パーティ情報 === */
+    .party-card {
+      margin-top: 16px;
+      display: none; /* 初期は非表示 */
+    }
+    .party-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .party-member {
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+      padding: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .party-info {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      margin-right: 12px;
+    }
+    .party-name {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+    .party-hp-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .party-hp-bar-bg {
+      flex: 1;
+      height: 6px;
+      background: rgba(0, 0, 0, 0.4);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .party-hp-bar-fill {
+      height: 100%;
+      background: var(--success-green);
+      transition: width 0.3s;
+    }
+    .party-hp-text {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      font-family: 'Orbitron', sans-serif;
+      min-width: 40px;
+      text-align: right;
+    }
+    .btn-party-op {
+      background: rgba(0, 230, 118, 0.15);
+      border: 1px solid rgba(0, 230, 118, 0.3);
+      color: var(--success-green);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-family: 'Noto Sans JP', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-party-op:hover {
+      background: rgba(0, 230, 118, 0.3);
+    }
   </style>
 </head>
 
@@ -1659,6 +1730,14 @@
       <div class="room-status" id="room-status">
         <div class="room-status-dot disconnected" id="room-status-dot"></div>
         <span id="room-status-text">オフライン（ローカル保存のみ）</span>
+      </div>
+    </div>
+
+    <!-- パーティ情報 -->
+    <div class="card party-card" id="party-card">
+      <div class="card-title">🧑‍🤝‍🧑 パーティ情報</div>
+      <div class="party-list" id="party-list">
+        <!-- JSで動的に追加 -->
       </div>
     </div>
 
@@ -1930,6 +2009,7 @@
     // === ルーム接続状態 ===
     let currentRoomId = null;
     let firebaseRef = null;
+    let statusRef = null;
     let firebaseListener = null;
     let isSyncingFromFirebase = false; // Firebase→ローカル反映中フラグ
 
@@ -2017,6 +2097,9 @@
       const data = buildSaveData();
       localStorage.setItem(SAVE_KEY, JSON.stringify(data));
       // Firebaseへの全体ステータス保存は行わず、個人のローカル保存のみとする
+      
+      // パーティ情報用に自ステータスを送信
+      pushLocalStatusToFirebase();
     }
 
     // ローカルからロード
@@ -2135,9 +2218,25 @@
       if (firebaseListener && firebaseRef) {
         firebaseRef.off('child_added', firebaseListener);
       }
+      if (statusRef) {
+        statusRef.off('value');
+      }
 
       currentRoomId = roomId;
       firebaseRef = db.ref('shared_dice/' + roomId);
+      statusRef = db.ref('room_status/' + roomId);
+
+      // 切断時に自身を削除 (disconnect)
+      statusRef.child(localSessionId).onDisconnect().remove();
+
+      // 自分のステータスをすぐに登録
+      pushLocalStatusToFirebase();
+
+      // パーティ情報を監視
+      statusRef.on('value', (snap) => {
+        renderPartyInfo(snap.val());
+      });
+      document.getElementById('party-card').style.display = 'block';
 
       // 接続状態を更新
       elRoomStatusDot.className = 'room-status-dot connected';
@@ -2176,9 +2275,17 @@
         firebaseRef.off('child_added', firebaseListener);
         firebaseRef.off('child_changed');
       }
+      if (statusRef) {
+        statusRef.child(localSessionId).remove();
+        statusRef.off('value');
+        statusRef = null;
+      }
       currentRoomId = null;
       firebaseRef = null;
       firebaseListener = null;
+
+      document.getElementById('party-card').style.display = 'none';
+      document.getElementById('party-list').innerHTML = '';
 
       elRoomStatusDot.className = 'room-status-dot disconnected';
       elRoomStatusText.textContent = 'オフライン（ローカル保存のみ）';
@@ -3631,6 +3738,98 @@
       rankSelect.addEventListener('change', saveToStorage);
       nameInput.addEventListener('input', saveToStorage);
     };
+
+    // === パーティHP共有機能 ===
+    function pushLocalStatusToFirebase() {
+      if (!currentRoomId || !statusRef) return;
+      const charName = document.getElementById('char-name').value || '名無し';
+      statusRef.child(localSessionId).update({
+        charName: charName,
+        hpCurrent: hpCurrent,
+        hpMax: hpMax,
+        lastUpdated: firebase.database.ServerValue.TIMESTAMP
+      });
+    }
+
+    function renderPartyInfo(data) {
+      const list = document.getElementById('party-list');
+      list.innerHTML = '';
+      if (!data) return;
+      
+      Object.keys(data).forEach(key => {
+        const member = data[key];
+        
+        // 自分のデータ変更があればローカルと同期（別ウィンドウでの操作や、他プレイヤーからの操作反映用）
+        if (key === localSessionId) {
+          if (member.hpCurrent !== undefined && member.hpCurrent !== hpCurrent) {
+             hpCurrent = member.hpCurrent;
+             origRenderHp();
+             saveToStorage();
+          }
+          return; // 自分自身はリストに表示しない
+        }
+        
+        // 自分以外を描画する
+        const hpCurrentVal = member.hpCurrent || 0;
+        const hpMaxVal = member.hpMax || 1;
+        const pct = Math.max(0, Math.min(100, (hpCurrentVal / hpMaxVal) * 100));
+        const div = document.createElement('div');
+        div.className = 'party-member';
+        div.innerHTML = `
+          <div class="party-info">
+            <div class="party-name">${member.charName}</div>
+            <div class="party-hp-container">
+               <div class="party-hp-bar-bg"><div class="party-hp-bar-fill" style="width: ${pct}%"></div></div>
+               <div class="party-hp-text">${hpCurrentVal} / ${hpMaxVal}</div>
+            </div>
+          </div>
+          <div class="party-actions">
+            <button class="btn-party-op">HP調整</button>
+          </div>
+        `;
+        div.querySelector('.btn-party-op').onclick = () => {
+          operatePartyHp(key, member.charName, hpCurrentVal, hpMaxVal);
+        };
+        list.appendChild(div);
+      });
+    }
+
+    function operatePartyHp(targetSessionId, targetName, targetHp, targetMaxHp) {
+      const input = prompt(`${targetName} のHPを調整します。\n回復するなら正の数（例: 3）、ダメージなら負の数（例: -2）を入力してください。`);
+      if (!input) return;
+      const amount = parseInt(input, 10);
+      if (isNaN(amount) || amount === 0) return;
+      
+      let newHp = targetHp + amount;
+      if (newHp > targetMaxHp) newHp = targetMaxHp;
+      if (newHp < 0) newHp = 0;
+      
+      const realAmount = newHp - targetHp;
+      if (realAmount === 0) {
+        alert("これ以上HPを変化させられません。");
+        return;
+      }
+      
+      // Firebase上の対象HPを更新
+      if (statusRef) {
+        statusRef.child(targetSessionId).update({ hpCurrent: newHp });
+      }
+      
+      // システムメッセージをチャットに送信
+      if (firebaseRef) {
+        const myName = document.getElementById('char-name').value || '名前未設定';
+        const actionText = realAmount > 0 ? `${realAmount}点 回復` : `${Math.abs(realAmount)}点 ダメージ`;
+        const msg = `[システム] ${myName}が回復魔法等により、${targetName}のHPを ${actionText} させました！ (現在HP: ${newHp})`;
+        
+        firebaseRef.push({
+          type: 'chat',
+          sessionId: 'SYSTEM',
+          charName: 'システム',
+          text: msg,
+          timestamp: firebase.database.ServerValue.TIMESTAMP
+        });
+      }
+    }
   </script>
 </body>
 
