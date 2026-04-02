@@ -1617,7 +1617,7 @@
       { name: '斧', cost: 5, stat: '体力', effect: '６の出目が出た分だけ自動成功＋１。大ぶりな斧類', sixBonus: true },
       { name: 'ハンマー', cost: 5, stat: '体力', effect: '戦闘判定で必要成功数が１下がる。大きなハンマー。' },
       { name: '弓', cost: 5, stat: '敏捷力', effect: '戦闘判定で射程１で攻撃することができる。遠距離攻撃ができる弓。' },
-      { name: '盾', cost: 5, stat: '体力', effect: '戦闘で防御判定時に＋１d。敵からの攻撃を受け止めることができる盾', diceBonus: { hp: 1 } },
+      { name: '盾', cost: 5, stat: '体力', effect: '受けたダメージを１点減少する。敵からの攻撃を受け止めることができる盾', damageReduction: 1 },
       { name: '鎧', cost: 5, stat: 'ー', effect: 'HP＋５。攻撃を受ける時にダメージを防ぐ鎧。', modifiers: { hp: 5 } },
       { name: 'ハンドガン', cost: 10, stat: '敏捷力', effect: '戦闘で判定成功数＋１。射程１。銃弾を放つ武器。使用するたびにSPを１点使用する。', spCost: 1, successBonus: { agi: 1 } },
       { name: 'サブマシンガン', cost: 15, stat: '敏捷力', effect: '出目3も成功になる。射程１。大量の銃弾を放つ武器。使用するたびにSPを１点使用する。', successThreshold: 3, spCost: 1 },
@@ -2737,8 +2737,19 @@
 
     // ダメージボタン
     document.getElementById('btn-damage').addEventListener('click', () => {
-      const dmg = parseInt(elHpDamageInput.value) || 0;
+      let dmg = parseInt(elHpDamageInput.value) || 0;
       if (dmg <= 0) return;
+      // コモンパーツのダメージ軽減を適用
+      let reduction = 0;
+      document.querySelectorAll('.common-part-select').forEach(sel => {
+        const part = COMMON_PARTS[sel.selectedIndex];
+        if (part && part.damageReduction) reduction += part.damageReduction;
+      });
+      if (reduction > 0) {
+        const originalDmg = dmg;
+        dmg = Math.max(0, dmg - reduction);
+        console.log(`[ダメージ] ${originalDmg} - 軽減${reduction} = ${dmg}`);
+      }
       hpCurrent -= dmg;
       renderHp();
       elHpDamageInput.value = '';
