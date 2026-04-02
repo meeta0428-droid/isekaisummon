@@ -2067,8 +2067,11 @@
     function buildSaveData() {
       // コモンパーツの保存データを抽出
       const commonPartsData = [];
-      document.querySelectorAll('.common-part-select').forEach(sel => {
+      const commonPartsActive = [];
+      document.querySelectorAll('.common-part-select').forEach((sel, i) => {
         commonPartsData.push(sel.selectedIndex);
+        const toggle = document.getElementById(`part-toggle-${i}`);
+        commonPartsActive.push(toggle ? toggle.checked : false);
       });
 
       return {
@@ -2080,6 +2083,7 @@
           cha: parseInt(document.getElementById('stat-cha').dataset.val) || 3,
         },
         commonParts: commonPartsData,
+        commonPartsActive: commonPartsActive,
         sp: spTotal,
         hpCurrent: hpCurrent,
         hpMax: hpMax,
@@ -3071,7 +3075,9 @@
     // 装備中コモンパーツのmodifier合計を計算
     function getCommonPartsModifiers() {
       const mods = { hp: 0, sp: 0 };
-      document.querySelectorAll('.common-part-select').forEach(sel => {
+      document.querySelectorAll('.common-part-select').forEach((sel, i) => {
+        const toggle = document.getElementById(`part-toggle-${i}`);
+        if (!toggle || !toggle.checked) return;
         const part = COMMON_PARTS[sel.selectedIndex];
         if (part && part.modifiers) {
           Object.keys(part.modifiers).forEach(key => {
@@ -3086,7 +3092,9 @@
     // statKey: 'hp', 'agi', 'int', 'cha'
     function getCommonPartsDiceBonus(statKey) {
       let bonus = 0;
-      document.querySelectorAll('.common-part-select').forEach(sel => {
+      document.querySelectorAll('.common-part-select').forEach((sel, i) => {
+        const toggle = document.getElementById(`part-toggle-${i}`);
+        if (!toggle || !toggle.checked) return;
         const part = COMMON_PARTS[sel.selectedIndex];
         if (part && part.diceBonus && part.diceBonus[statKey]) {
           bonus += part.diceBonus[statKey];
@@ -3099,7 +3107,9 @@
     // デフォルト: 4（出目4以上で成功）
     function getSuccessThreshold() {
       let threshold = 4;
-      document.querySelectorAll('.common-part-select').forEach(sel => {
+      document.querySelectorAll('.common-part-select').forEach((sel, i) => {
+        const toggle = document.getElementById(`part-toggle-${i}`);
+        if (!toggle || !toggle.checked) return;
         const part = COMMON_PARTS[sel.selectedIndex];
         if (part && part.successThreshold && part.successThreshold < threshold) {
           threshold = part.successThreshold;
@@ -3111,7 +3121,9 @@
     // 装備中コモンパーツの合計SP消費を計算
     function getCommonPartsSpCost() {
       let totalCost = 0;
-      document.querySelectorAll('.common-part-select').forEach(sel => {
+      document.querySelectorAll('.common-part-select').forEach((sel, i) => {
+        const toggle = document.getElementById(`part-toggle-${i}`);
+        if (!toggle || !toggle.checked) return;
         const part = COMMON_PARTS[sel.selectedIndex];
         if (part && part.spCost) {
           totalCost += part.spCost;
@@ -3123,7 +3135,9 @@
     // 装備中コモンパーツにsixBonusがあるか判定
     function hasSixBonus() {
       let has = false;
-      document.querySelectorAll('.common-part-select').forEach(sel => {
+      document.querySelectorAll('.common-part-select').forEach((sel, i) => {
+        const toggle = document.getElementById(`part-toggle-${i}`);
+        if (!toggle || !toggle.checked) return;
         const part = COMMON_PARTS[sel.selectedIndex];
         if (part && part.sixBonus) has = true;
       });
@@ -3134,7 +3148,9 @@
     // statKey: 'hp', 'agi', 'int', 'cha'
     function getCommonPartsSuccessBonus(statKey) {
       let bonus = 0;
-      document.querySelectorAll('.common-part-select').forEach(sel => {
+      document.querySelectorAll('.common-part-select').forEach((sel, i) => {
+        const toggle = document.getElementById(`part-toggle-${i}`);
+        if (!toggle || !toggle.checked) return;
         const part = COMMON_PARTS[sel.selectedIndex];
         if (part && part.successBonus && part.successBonus[statKey]) {
           bonus += part.successBonus[statKey];
@@ -3155,14 +3171,22 @@
     function recalcFromCommonParts() {
       const mods = getCommonPartsModifiers();
       const hpStat = parseInt(document.getElementById('stat-hp').dataset.val) || 3;
+      const intStat = parseInt(document.getElementById('stat-int').dataset.val) || 3;
+      
       const oldMax = hpMax;
-      const newMax = hpStat * 2 + 10 + mods.hp;
-      console.log(`[recalcFromCommonParts] 体力=${hpStat}, mods.hp=${mods.hp}, oldMax=${oldMax}, newMax=${newMax}`);
-      hpMax = newMax;
-      // HPの差分を現在HPにも反映
+      hpMax = hpStat * 2 + 10 + mods.hp;
+      console.log(`[recalcFromCommonParts] 体力=${hpStat}, mods.hp=${mods.hp}, oldMax=${oldMax}, hpMax=${hpMax}`);
+      
+      // HPの差分を現在HPにも反映（ただし上限を超えない）
       hpCurrent = Math.max(0, hpCurrent + (hpMax - oldMax));
       if (hpCurrent > hpMax) hpCurrent = hpMax;
       renderHp();
+      
+      // SPの切り下げ処理
+      const spMax = intStat + mods.sp;
+      if (spTotal > spMax) spTotal = spMax;
+      if (spTotal < 0) spTotal = 0;
+      elSpTotal.textContent = spTotal;
     }
 
     // HP表示を更新
@@ -3193,7 +3217,9 @@
       if (dmg <= 0) return;
       // コモンパーツのダメージ軽減を適用
       let reduction = 0;
-      document.querySelectorAll('.common-part-select').forEach(sel => {
+      document.querySelectorAll('.common-part-select').forEach((sel, i) => {
+        const toggle = document.getElementById(`part-toggle-${i}`);
+        if (!toggle || !toggle.checked) return;
         const part = COMMON_PARTS[sel.selectedIndex];
         if (part && part.damageReduction) reduction += part.damageReduction;
       });
@@ -3498,49 +3524,76 @@
           const div = document.createElement('div');
           div.className = 'common-part-item';
           div.innerHTML = `
-            <select class="common-part-select" id="part-sel-${i}" data-prev-idx="0">
-              ${optionsHtml}
-            </select>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <select class="common-part-select" id="part-sel-${i}" data-prev-idx="0" style="flex: 1;">
+                ${optionsHtml}
+              </select>
+              <label class="part-toggle-label" style="display: flex; align-items: center; font-size: 0.8rem; cursor: pointer; background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1);">
+                <input type="checkbox" id="part-toggle-${i}" class="part-toggle-checkbox">
+                <span style="margin-left: 6px; font-weight: bold; color: var(--text-primary);">ON</span>
+              </label>
+            </div>
             <div class="common-part-desc" id="part-desc-${i}">効果: なし</div>
           `;
           elPartsList.appendChild(div);
 
           const sel = div.querySelector('select');
+          const toggle = div.querySelector(`#part-toggle-${i}`);
 
           // 復元処理
           if (saved && saved.commonParts && saved.commonParts[i] !== undefined) {
             sel.selectedIndex = saved.commonParts[i];
             sel.dataset.prevIdx = sel.selectedIndex;
+            if (saved.commonPartsActive && saved.commonPartsActive[i] !== undefined) {
+              toggle.checked = saved.commonPartsActive[i];
+            } else {
+              toggle.checked = false; // 初期状態はデフォルトOFF
+            }
             updatePartDesc(i);
+          } else {
+            toggle.checked = false; // 装備枠のデフォルトOFF
           }
 
-          // コモンパーツ変更時の処理（change + input の両方でSafari対応）
           function onPartChange(e) {
             const target = e.target;
             const idx = target.selectedIndex;
-            // 前回と同じ選択なら何もしない（input重複防止）
             if (String(idx) === target.dataset.prevIdx) return;
             console.log(`[コモンパーツ] スロット${i}: ${COMMON_PARTS[idx].name} 選択 (idx=${idx})`);
             updatePartDesc(i);
 
             const pts = calculateCreationPoints();
             target.dataset.prevIdx = String(target.selectedIndex);
-            // コモンパーツ変更時にHP・SPを再計算
             recalcFromCommonParts();
             console.log(`[コモンパーツ] HP: ${hpCurrent}/${hpMax}`);
             saveToStorage();
           }
+          
+          function onToggleChange() {
+            updatePartDesc(i);
+            recalcFromCommonParts();
+            saveToStorage();
+          }
+          
           sel.addEventListener('change', onPartChange);
           sel.addEventListener('input', onPartChange);
+          toggle.addEventListener('change', onToggleChange);
         }
       }
 
       function updatePartDesc(i) {
         const sel = document.getElementById(`part-sel-${i}`);
         const descDiv = document.getElementById(`part-desc-${i}`);
+        const toggle = document.getElementById(`part-toggle-${i}`);
         if (!sel || !descDiv) return;
         const part = COMMON_PARTS[sel.selectedIndex];
-        descDiv.innerHTML = `使用能力値: <strong style="color:var(--accent-cyan);">${part.stat}</strong> / 効果: ${part.effect}`;
+        
+        if (toggle && toggle.checked) {
+          descDiv.innerHTML = `使用能力値: <strong style="color:var(--accent-cyan);">${part.stat}</strong> / 効果: ${part.effect}`;
+          descDiv.style.opacity = "1.0";
+        } else {
+          descDiv.innerHTML = `使用能力値: <strong style="color:var(--text-secondary);">${part.stat}</strong> / 効果: <span style="color:var(--text-secondary);">（OFFのため無効）</span> ` + part.effect;
+          descDiv.style.opacity = "0.5";
+        }
       }
 
       // 初回・復元後に作成ポイントを再計算
