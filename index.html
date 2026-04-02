@@ -2089,6 +2089,7 @@
         sp: spTotal,
         hpCurrent: hpCurrent,
         hpMax: hpMax,
+        partsHpCurrent: partsHpCurrent,
         extraCreationPoints: parseInt(document.getElementById('extra-creation-points').value) || 0,
         cheatSlots: skillSlots.map(s => ({ name: s.name, baseRank: s.baseRank, rank: s.rank, used: s.used })),
         activeBonus: activeBonus,
@@ -3605,6 +3606,12 @@
             updatePartDesc(i);
           } else {
             toggle.checked = false; // 装備枠のデフォルトOFF
+          }
+          
+          // 前回のセーブデータにpartsHpCurrentがなかった場合や初回アクセス時のため、HPが0なら初期化する
+          const currentPart = COMMON_PARTS[sel.selectedIndex];
+          if (partsHpCurrent[i] === 0 && currentPart && currentPart.partHpMax) {
+            partsHpCurrent[i] = currentPart.partHpMax;
           }
 
           function onPartChange(e) {
