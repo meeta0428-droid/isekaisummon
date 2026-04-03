@@ -1638,17 +1638,21 @@
       color: var(--accent-purple);
       font-weight: bold;
     }
+
     /* === パーティ情報 === */
     .party-card {
       margin-top: 16px;
-      display: none; /* 初期は非表示 */
+      display: none;
+      /* 初期は非表示 */
     }
+
     .party-list {
       display: flex;
       flex-direction: column;
       gap: 12px;
       margin-top: 12px;
     }
+
     .party-member {
       background: rgba(0, 0, 0, 0.2);
       border: 1px solid rgba(255, 255, 255, 0.05);
@@ -1658,23 +1662,27 @@
       justify-content: space-between;
       align-items: center;
     }
+
     .party-info {
       display: flex;
       flex-direction: column;
       flex: 1;
       margin-right: 12px;
     }
+
     .party-name {
       font-size: 0.9rem;
       font-weight: 700;
       color: var(--text-primary);
       margin-bottom: 4px;
     }
+
     .party-hp-container {
       display: flex;
       align-items: center;
       gap: 8px;
     }
+
     .party-hp-bar-bg {
       flex: 1;
       height: 6px;
@@ -1682,11 +1690,13 @@
       border-radius: 3px;
       overflow: hidden;
     }
+
     .party-hp-bar-fill {
       height: 100%;
       background: var(--success-green);
       transition: width 0.3s;
     }
+
     .party-hp-text {
       font-size: 0.75rem;
       color: var(--text-secondary);
@@ -1694,6 +1704,7 @@
       min-width: 40px;
       text-align: right;
     }
+
     .btn-party-op {
       background: rgba(0, 230, 118, 0.15);
       border: 1px solid rgba(0, 230, 118, 0.3);
@@ -1706,6 +1717,7 @@
       cursor: pointer;
       transition: all 0.2s;
     }
+
     .btn-party-op:hover {
       background: rgba(0, 230, 118, 0.3);
     }
@@ -2063,7 +2075,7 @@
       { name: '義肢改造', cost: 5, stat: 'ー', effect: 'HP＋４。戦闘判定＋１d。魅力判定−１d。ぱっと見でわかる義肢を持つ。改造されたそれは、一般人から見たら忌避の対象かもしれない。', modifiers: { hp: 4 }, diceBonus: { hp: 1, cha: -1 } },
       { name: 'サイバーウェア', cost: 10, stat: 'ー', effect: 'HP＋６、体力、敏捷力判定＋１d。高性能な義肢を持っている。見た目も変化動作をさせなければ、普通の体と変わらない見た目を持つ。', modifiers: { hp: 6 }, diceBonus: { hp: 1, agi: 1 } },
       { name: 'TS', cost: 5, stat: 'ー', effect: '魅力判定＋１d。あなたは精神と性別が入れ替わっている。怪しい魅力が漂っている。', diceBonus: { cha: 1 } },
-      { name: 'ピックアップトラック', cost: 10, stat: '敏捷力', effect: '快適な移動：フェイズ終了時にSP＋1。５人乗りの荷台のある車' }
+      { name: 'ピックアップトラック', cost: 10, stat: '敏捷力', effect: '快適な移動：フェイズ終了時に全員のSP＋1。５人乗りの荷台のある車' }
     ];
 
     // セーブデータを作成
@@ -2106,7 +2118,7 @@
       const data = buildSaveData();
       localStorage.setItem(SAVE_KEY, JSON.stringify(data));
       // Firebaseへの全体ステータス保存は行わず、個人のローカル保存のみとする
-      
+
       // パーティ情報用に自ステータスを送信
       pushLocalStatusToFirebase();
     }
@@ -2256,22 +2268,22 @@
           console.log(isGM ? '[GM] あなたがGM権限を取得しました' : '[Player] プレイヤーとして参加しました');
         }
       });
-      
+
       // GMが切断した時の対応（GMを空にする等）
       // TRPG特有のホスト抜けを考慮し、もし自身がGMなら切断時にgmSessionIdを消す処理を追加
       roomInfoRef.child('gmSessionId').onDisconnect().cancel(); // 既存のキャンセルを解除
-      
+
       roomInfoRef.child('gmSessionId').on('value', snap => {
-         // 最新のGM状態を同期して切断時の削除予約を手動で管理する
-         if (snap.val() === localSessionId) {
-             roomInfoRef.child('gmSessionId').onDisconnect().remove();
-             isGM = true;
-         } else {
-             roomInfoRef.child('gmSessionId').onDisconnect().cancel();
-             isGM = false;
-         }
-         // UI再描画用
-         statusRef.once('value').then(snap => renderPartyInfo(snap.val()));
+        // 最新のGM状態を同期して切断時の削除予約を手動で管理する
+        if (snap.val() === localSessionId) {
+          roomInfoRef.child('gmSessionId').onDisconnect().remove();
+          isGM = true;
+        } else {
+          roomInfoRef.child('gmSessionId').onDisconnect().cancel();
+          isGM = false;
+        }
+        // UI再描画用
+        statusRef.once('value').then(snap => renderPartyInfo(snap.val()));
       });
 
       // 切断時に自身を削除 (disconnect)
@@ -2337,7 +2349,7 @@
       }
       if (roomInfoRef) {
         if (isGM) {
-            roomInfoRef.child('gmSessionId').remove();
+          roomInfoRef.child('gmSessionId').remove();
         }
         roomInfoRef.off('value');
         roomInfoRef = null;
@@ -3231,7 +3243,7 @@
       const mods = getCommonPartsModifiers();
       const oldMax = spMax;
       spMax = statVal + mods.sp;
-      
+
       spTotal = Math.max(0, spTotal + (spMax - oldMax));
       if (spTotal > spMax) spTotal = spMax;
       elSpTotal.textContent = spTotal;
@@ -3242,15 +3254,15 @@
       const mods = getCommonPartsModifiers();
       const hpStat = parseInt(document.getElementById('stat-hp').dataset.val) || 3;
       const intStat = parseInt(document.getElementById('stat-int').dataset.val) || 3;
-      
+
       const oldHpMax = hpMax;
       hpMax = hpStat * 2 + 10 + mods.hp;
-      
+
       // HPの差分を現在HPにも反映（ただし上限を超えない）
       hpCurrent = Math.max(0, hpCurrent + (hpMax - oldHpMax));
       if (hpCurrent > hpMax) hpCurrent = hpMax;
       renderHp();
-      
+
       // SPの差分を現在SPにも反映
       const oldSpMax = spMax;
       spMax = intStat + mods.sp;
@@ -3531,7 +3543,7 @@
         // SubCharacter HP
         if (saved.partsHpCurrent !== undefined && Array.isArray(saved.partsHpCurrent)) {
           for (let i = 0; i < 6; i++) {
-             partsHpCurrent[i] = saved.partsHpCurrent[i] || 0;
+            partsHpCurrent[i] = saved.partsHpCurrent[i] || 0;
           }
         }
         // チートスキルスロット
@@ -3625,7 +3637,7 @@
           } else {
             toggle.checked = false; // 装備枠のデフォルトOFF
           }
-          
+
           // 前回のセーブデータにpartsHpCurrentがなかった場合や初回アクセス時のため、HPが0なら初期化する
           const currentPart = COMMON_PARTS[sel.selectedIndex];
           if (partsHpCurrent[i] === 0 && currentPart && currentPart.partHpMax) {
@@ -3637,7 +3649,7 @@
             const idx = target.selectedIndex;
             if (String(idx) === target.dataset.prevIdx) return;
             console.log(`[コモンパーツ] スロット${i}: ${COMMON_PARTS[idx].name} 選択 (idx=${idx})`);
-            
+
             // パーツが変更されたら、もしHPを持つパーツならHPをMAX値にリセット
             const part = COMMON_PARTS[idx];
             if (part && part.partHpMax) {
@@ -3645,7 +3657,7 @@
             } else {
               partsHpCurrent[i] = 0;
             }
-            
+
             updatePartDesc(i);
 
             const pts = calculateCreationPoints();
@@ -3654,13 +3666,13 @@
             console.log(`[コモンパーツ] HP: ${hpCurrent}/${hpMax}`);
             saveToStorage();
           }
-          
+
           function onToggleChange() {
             updatePartDesc(i);
             recalcFromCommonParts();
             saveToStorage();
           }
-          
+
           sel.addEventListener('change', onPartChange);
           sel.addEventListener('input', onPartChange);
           toggle.addEventListener('change', onToggleChange);
@@ -3673,7 +3685,7 @@
         const toggle = document.getElementById(`part-toggle-${i}`);
         if (!sel || !descDiv) return;
         const part = COMMON_PARTS[sel.selectedIndex];
-        
+
         if (toggle && toggle.checked) {
           descDiv.innerHTML = `使用能力値: <strong style="color:var(--accent-cyan);">${part.stat}</strong> / 効果: ${part.effect}`;
           descDiv.style.opacity = "1.0";
@@ -3889,7 +3901,7 @@
     // === パーティHP共有機能 ===
     function pushLocalStatusToFirebase() {
       if (!currentRoomId || !statusRef) return;
-      
+
       const subChars = [];
       document.querySelectorAll('.common-part-select').forEach((sel, i) => {
         const toggle = document.getElementById(`part-toggle-${i}`);
@@ -3906,7 +3918,7 @@
           }
         }
       });
-      
+
       const charName = document.getElementById('char-name').value || '名無し';
       statusRef.child(localSessionId).update({
         charName: charName,
@@ -3921,41 +3933,41 @@
       const list = document.getElementById('party-list');
       list.innerHTML = '';
       if (!data) return;
-      
+
       Object.keys(data).forEach(key => {
         const member = data[key];
-        
+
         // 自分のデータ変更があればローカルと同期（別ウィンドウでの操作や、他プレイヤーからの操作反映用）
         if (key === localSessionId) {
           let updated = false;
           if (member.hpCurrent !== undefined && member.hpCurrent !== hpCurrent) {
-             hpCurrent = member.hpCurrent;
-             origRenderHp();
-             updated = true;
+            hpCurrent = member.hpCurrent;
+            origRenderHp();
+            updated = true;
           }
           if (member.subChars) {
             member.subChars.forEach(sub => {
-               if (partsHpCurrent[sub.slotIdx] !== sub.hpCurrent) {
-                 partsHpCurrent[sub.slotIdx] = sub.hpCurrent;
-                 updated = true;
-               }
+              if (partsHpCurrent[sub.slotIdx] !== sub.hpCurrent) {
+                partsHpCurrent[sub.slotIdx] = sub.hpCurrent;
+                updated = true;
+              }
             });
           }
           if (updated) saveToStorage();
         }
-        
+
         // メインキャラクターの描画
         const hpCurrentVal = member.hpCurrent || 0;
         const hpMaxVal = member.hpMax || 1;
         const pct = Math.max(0, Math.min(100, (hpCurrentVal / hpMaxVal) * 100));
         const div = document.createElement('div');
         div.className = 'party-member';
-        
+
         // GM用キックボタンのHTML（自分以外の場合のみ表示）
-        const kickBtnHtml = (isGM && key !== localSessionId) ? 
+        const kickBtnHtml = (isGM && key !== localSessionId) ?
           `<button class="btn-party-op kick" style="background-color: var(--accent-red); margin-left: 4px;">キック</button>` : '';
         const nameSuffix = (key === localSessionId) ? ' (あなた)' : '';
-        
+
         div.innerHTML = `
           <div class="party-info">
             <div class="party-name">${member.charName}${nameSuffix}</div>
@@ -3976,7 +3988,7 @@
           div.querySelector('.btn-party-op.kick').onclick = () => kickPartyMember(key, member.charName);
         }
         list.appendChild(div);
-        
+
         // サブキャラクターの描画
         if (member.subChars && member.subChars.length > 0) {
           member.subChars.forEach(sub => {
@@ -4008,12 +4020,12 @@
     // GMによる強制退室処理
     function kickPartyMember(targetSessionId, targetName) {
       if (!confirm(`本当に ${targetName} を退出させますか？`)) return;
-      
+
       // 対象のkickedフラグを立てる
       if (statusRef) {
         statusRef.child(targetSessionId).update({ kicked: true });
       }
-      
+
       // システムメッセージ通知
       if (firebaseRef) {
         const msg = `[システム] ${targetName} がGMによってルームから退出させられました。`;
@@ -4032,28 +4044,28 @@
       if (!input) return;
       const amount = parseInt(input, 10);
       if (isNaN(amount) || amount === 0) return;
-      
+
       let newHp = targetHp + amount;
       if (newHp > targetMaxHp) newHp = targetMaxHp;
       if (newHp < 0) newHp = 0;
-      
+
       const realAmount = newHp - targetHp;
       if (realAmount === 0) {
         alert("これ以上HPを変化させられません。");
         return;
       }
-      
+
       // Firebase上の対象HPを更新
       if (statusRef) {
         statusRef.child(targetSessionId).update({ hpCurrent: newHp });
       }
-      
+
       // システムメッセージをチャットに送信
       if (firebaseRef) {
         const myName = document.getElementById('char-name').value || '名前未設定';
         const actionText = realAmount > 0 ? `${realAmount}点 回復` : `${Math.abs(realAmount)}点 ダメージ`;
         const msg = `[システム] ${myName}が回復魔法等により、${targetName}のHPを ${actionText} させました！ (現在HP: ${newHp})`;
-        
+
         firebaseRef.push({
           type: 'chat',
           sessionId: 'SYSTEM',
@@ -4069,11 +4081,11 @@
       if (!input) return;
       const amount = parseInt(input, 10);
       if (isNaN(amount) || amount === 0) return;
-      
+
       let newHp = targetHp + amount;
       if (newHp > targetMaxHp) newHp = targetMaxHp;
       if (newHp < 0) newHp = 0;
-      
+
       const realAmount = newHp - targetHp;
       if (realAmount === 0) {
         alert("これ以上HPを変化させられません。");
@@ -4101,7 +4113,7 @@
         const myName = document.getElementById('char-name').value || '名前未設定';
         const actionText = realAmount > 0 ? `${realAmount}点 回復` : `${Math.abs(realAmount)}点 ダメージ`;
         const msg = `[システム] ${myName}が ${targetName}のHPを ${actionText} させました！ (現在HP: ${newHp})`;
-        
+
         firebaseRef.push({
           type: 'chat',
           sessionId: 'SYSTEM',
