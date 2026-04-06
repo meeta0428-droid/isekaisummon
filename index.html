@@ -1048,6 +1048,26 @@
       background: rgba(255, 255, 255, 0.15);
     }
 
+    .stat-bonus-btn {
+      width: 24px;
+      height: 24px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: var(--text-primary);
+      font-size: 1rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .stat-bonus-btn:active {
+      transform: scale(0.9);
+      background: rgba(255, 255, 255, 0.15);
+    }
+
     .stat-value {
       width: 32px;
       font-size: 1.1rem;
@@ -1884,7 +1904,13 @@
             <span class="stat-value" id="stat-hp" data-val="3">3</span>
             <button class="stat-btn plus" data-target="stat-hp">+</button>
           </div>
-          <button class="stat-roll-btn" data-stat-key="hp" disabled>🎲 判定</button>
+          <div class="stat-bonus-control" style="display:flex; align-items:center; gap:4px; margin-left:auto;">
+            <span style="font-size:0.65rem; color:var(--text-secondary);">ボ:</span>
+            <button class="stat-bonus-btn minus" data-target="bonus-hp">-</button>
+            <span class="stat-bonus-value" id="bonus-hp" data-val="0" style="color:var(--accent-purple); font-weight:bold; width:24px; text-align:center; font-size:0.9rem;">0</span>
+            <button class="stat-bonus-btn plus" data-target="bonus-hp">+</button>
+          </div>
+          <button class="stat-roll-btn" data-stat-key="hp" style="margin-left: 8px;" disabled>🎲 判定</button>
         </div>
         <div class="stat-row" data-stat="agi">
           <div class="stat-icon agi">⚡</div>
@@ -1894,7 +1920,13 @@
             <span class="stat-value" id="stat-agi" data-val="3">3</span>
             <button class="stat-btn plus" data-target="stat-agi">+</button>
           </div>
-          <button class="stat-roll-btn" data-stat-key="agi" disabled>🎲 判定</button>
+          <div class="stat-bonus-control" style="display:flex; align-items:center; gap:4px; margin-left:auto;">
+            <span style="font-size:0.65rem; color:var(--text-secondary);">ボ:</span>
+            <button class="stat-bonus-btn minus" data-target="bonus-agi">-</button>
+            <span class="stat-bonus-value" id="bonus-agi" data-val="0" style="color:var(--accent-purple); font-weight:bold; width:24px; text-align:center; font-size:0.9rem;">0</span>
+            <button class="stat-bonus-btn plus" data-target="bonus-agi">+</button>
+          </div>
+          <button class="stat-roll-btn" data-stat-key="agi" style="margin-left: 8px;" disabled>🎲 判定</button>
         </div>
         <div class="stat-row" data-stat="int">
           <div class="stat-icon int">📚</div>
@@ -1904,7 +1936,13 @@
             <span class="stat-value" id="stat-int" data-val="3">3</span>
             <button class="stat-btn plus" data-target="stat-int">+</button>
           </div>
-          <button class="stat-roll-btn" data-stat-key="int" disabled>🎲 判定</button>
+          <div class="stat-bonus-control" style="display:flex; align-items:center; gap:4px; margin-left:auto;">
+            <span style="font-size:0.65rem; color:var(--text-secondary);">ボ:</span>
+            <button class="stat-bonus-btn minus" data-target="bonus-int">-</button>
+            <span class="stat-bonus-value" id="bonus-int" data-val="0" style="color:var(--accent-purple); font-weight:bold; width:24px; text-align:center; font-size:0.9rem;">0</span>
+            <button class="stat-bonus-btn plus" data-target="bonus-int">+</button>
+          </div>
+          <button class="stat-roll-btn" data-stat-key="int" style="margin-left: 8px;" disabled>🎲 判定</button>
         </div>
         <div class="stat-row" data-stat="cha">
           <div class="stat-icon cha">✨</div>
@@ -1914,7 +1952,13 @@
             <span class="stat-value" id="stat-cha" data-val="3">3</span>
             <button class="stat-btn plus" data-target="stat-cha">+</button>
           </div>
-          <button class="stat-roll-btn" data-stat-key="cha" disabled>🎲 判定</button>
+          <div class="stat-bonus-control" style="display:flex; align-items:center; gap:4px; margin-left:auto;">
+            <span style="font-size:0.65rem; color:var(--text-secondary);">ボ:</span>
+            <button class="stat-bonus-btn minus" data-target="bonus-cha">-</button>
+            <span class="stat-bonus-value" id="bonus-cha" data-val="0" style="color:var(--accent-purple); font-weight:bold; width:24px; text-align:center; font-size:0.9rem;">0</span>
+            <button class="stat-bonus-btn plus" data-target="bonus-cha">+</button>
+          </div>
+          <button class="stat-roll-btn" data-stat-key="cha" style="margin-left: 8px;" disabled>🎲 判定</button>
         </div>
       </div>
     </div>
@@ -2216,6 +2260,12 @@
           agi: parseInt(document.getElementById('stat-agi').dataset.val) || 3,
           int: parseInt(document.getElementById('stat-int').dataset.val) || 3,
           cha: parseInt(document.getElementById('stat-cha').dataset.val) || 3,
+        },
+        bonusStats: {
+          hp: parseInt(document.getElementById('bonus-hp').dataset.val) || 0,
+          agi: parseInt(document.getElementById('bonus-agi').dataset.val) || 0,
+          int: parseInt(document.getElementById('bonus-int').dataset.val) || 0,
+          cha: parseInt(document.getElementById('bonus-cha').dataset.val) || 0,
         },
         commonParts: commonPartsData,
         commonPartsActive: commonPartsActive,
@@ -3461,10 +3511,11 @@
           return;
         }
 
-        // コモンパーツのダイスボーナスを加算
+        // コモンパーツのダイスボーナスと、新設されたボーナスダイスの加算
         const partsBonus = getCommonPartsDiceBonus(key);
-        const diceNum = Math.max(1, baseDiceNum + partsBonus);
-        console.log(`[能力値判定] ${STAT_NAMES[key]}: 基本${baseDiceNum}d + パーツ補正${partsBonus}d = ${diceNum}d`);
+        const explicitBonus = parseInt(document.getElementById(`bonus-${key}`).dataset.val) || 0;
+        const diceNum = Math.max(0, baseDiceNum + partsBonus + explicitBonus);
+        console.log(`[能力値判定] ${STAT_NAMES[key]}: 基本${baseDiceNum}d + パーツ補正${partsBonus}d + ボ${explicitBonus}d = ${diceNum}d`);
 
         // ボタンアニメーション
         btn.classList.add('rolling');
@@ -3645,6 +3696,18 @@
               el.textContent = saved.stats[key];
               const btn = document.querySelector(`[data-stat-key="${key}"]`);
               if (btn) btn.disabled = saved.stats[key] <= 0;
+            }
+          });
+        }
+        // ボーナスダイス
+        if (saved.bonusStats) {
+          ['hp', 'agi', 'int', 'cha'].forEach(key => {
+            if (saved.bonusStats[key] !== undefined) {
+              const el = document.getElementById(`bonus-${key}`);
+              if (el) {
+                el.dataset.val = saved.bonusStats[key];
+                el.textContent = saved.bonusStats[key] > 0 ? `+${saved.bonusStats[key]}` : saved.bonusStats[key];
+              }
             }
           });
         }
@@ -4008,6 +4071,23 @@
       });
     });
 
+    // ボーナスダイスの ＋/－ ボタン処理
+    document.querySelectorAll('.stat-bonus-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const targetId = e.currentTarget.dataset.target;
+        const targetEl = document.getElementById(targetId);
+        let val = parseInt(targetEl.dataset.val) || 0;
+        
+        if (e.currentTarget.classList.contains('plus')) val++;
+        else val--;
+
+        targetEl.dataset.val = val;
+        targetEl.textContent = val > 0 ? `+${val}` : val;
+
+        saveToStorage();
+      });
+    });
+
     // SP変更時に保存（MutationObserverを追加）
     const saveObserver = new MutationObserver(saveToStorage);
     saveObserver.observe(elSpTotal, { childList: true, characterData: true, subtree: true });
@@ -4287,11 +4367,17 @@
       text += `【作成ポイント残り】 ${points.cp}\n`;
       text += `【チートポイント残り】 ${points.chp}\n\n`;
 
-      text += `【能力値】\n`;
-      text += `体力: ${data.stats.hp}\n`;
-      text += `敏捷力: ${data.stats.agi}\n`;
-      text += `知力: ${data.stats.int}\n`;
-      text += `魅力: ${data.stats.cha}\n\n`;
+      text += `【能力値 (基本/ボーナス)】\n`;
+      const formatBonus = b => b > 0 ? `+${b}` : b;
+      const bHp = document.getElementById('bonus-hp') ? parseInt(document.getElementById('bonus-hp').dataset.val) || 0 : 0;
+      const bAgi = document.getElementById('bonus-agi') ? parseInt(document.getElementById('bonus-agi').dataset.val) || 0 : 0;
+      const bInt = document.getElementById('bonus-int') ? parseInt(document.getElementById('bonus-int').dataset.val) || 0 : 0;
+      const bCha = document.getElementById('bonus-cha') ? parseInt(document.getElementById('bonus-cha').dataset.val) || 0 : 0;
+      
+      text += `体力: ${data.stats.hp} (ﾎﾞｰﾅｽ: ${formatBonus(bHp)})\n`;
+      text += `敏捷力: ${data.stats.agi} (ﾎﾞｰﾅｽ: ${formatBonus(bAgi)})\n`;
+      text += `知力: ${data.stats.int} (ﾎﾞｰﾅｽ: ${formatBonus(bInt)})\n`;
+      text += `魅力: ${data.stats.cha} (ﾎﾞｰﾅｽ: ${formatBonus(bCha)})\n\n`;
 
       text += `【HP】 ${data.hpCurrent} / ${data.hpMax}\n`;
       text += `【SP】 ${data.sp} / ${data.spMax}\n\n`;
