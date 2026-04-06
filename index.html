@@ -1721,6 +1721,67 @@
     .btn-party-op:hover {
       background: rgba(0, 230, 118, 0.3);
     }
+
+    /* === データ管理 === */
+    .data-mgmt-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn-data {
+      flex: 1;
+      min-width: 120px;
+      padding: 12px;
+      border-radius: 10px;
+      font-family: 'Noto Sans JP', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      border: 1px solid transparent;
+    }
+
+    .btn-data:active {
+      transform: scale(0.95);
+    }
+
+    .btn-export {
+      background: rgba(0, 229, 255, 0.1);
+      border-color: rgba(0, 229, 255, 0.3);
+      color: var(--accent-cyan);
+    }
+
+    .btn-export:hover {
+      background: rgba(0, 229, 255, 0.2);
+      box-shadow: 0 0 12px rgba(0, 229, 255, 0.2);
+    }
+
+    .btn-import {
+      background: rgba(179, 136, 255, 0.1);
+      border-color: rgba(179, 136, 255, 0.3);
+      color: var(--accent-purple);
+    }
+
+    .btn-import:hover {
+      background: rgba(179, 136, 255, 0.2);
+      box-shadow: 0 0 12px rgba(179, 136, 255, 0.2);
+    }
+
+    .btn-reset {
+      background: rgba(255, 82, 82, 0.1);
+      border-color: rgba(255, 82, 82, 0.3);
+      color: var(--fail-red);
+    }
+
+    .btn-reset:hover {
+      background: rgba(255, 82, 82, 0.2);
+      box-shadow: 0 0 12px rgba(255, 82, 82, 0.2);
+    }
   </style>
 </head>
 
@@ -1980,6 +2041,18 @@
           <li class="cheat-log-empty">まだ使用していません</li>
         </ul>
       </div>
+    </div>
+
+    <!-- データ管理 -->
+    <div class="card">
+      <div class="card-title">⚙️ データ管理</div>
+      <div class="data-mgmt-row">
+        <button class="btn-data btn-export" id="btn-export">💾 JSON保存</button>
+        <button class="btn-data btn-import" id="btn-import-trigger">📂 JSON読込</button>
+        <button class="btn-data btn-reset" id="btn-reset-char">🗑️ リセット</button>
+      </div>
+      <input type="file" id="input-import-json" style="display: none;" accept=".json">
+      <div class="hp-formula" style="margin-top: 12px;">※ ブラウザの保存データをファイルに書き出したり、読み込んだりできます。</div>
     </div>
 
     <!-- 結果表示 -->
@@ -4123,6 +4196,74 @@
         });
       }
     }
+
+    // === データ管理機能（エクスポート・インポート・リセット） ===
+
+    // エクスポート: 現在のデータをJSONとしてダウンロード
+    function exportCharacterJSON() {
+      const data = buildSaveData();
+      const json = JSON.stringify(data, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const charName = data.charName || 'character';
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${charName}_${timestamp}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      console.log('[データ管理] エクスポート完了');
+    }
+
+    // インポート: JSONファイルを読み込んでlocalStorageに保存し、リロード
+    function handleJSONImport(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = JSON.parse(e.target.result);
+          // 簡易的なデータ検証
+          if (!data.stats || typeof data.stats !== 'object') {
+            throw new Error('不正なデータ形式です。');
+          }
+
+          if (confirm('キャラクターデータを読み込みますか？現在のデータは上書きされます。')) {
+            localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+            console.log('[データ管理] インポート成功。ページをリロードします。');
+            location.reload();
+          }
+        } catch (err) {
+          alert('ファイルの読み込みに失敗しました: ' + err.message);
+        }
+      };
+      reader.readAsText(file);
+      // 同じファイルを連続で選択できるようにリセット
+      event.target.value = '';
+    }
+
+    // リセット: localStorageを削除してリロード
+    function resetCharacter() {
+      if (confirm('全てのキャラクターデータをリセットしますか？この操作は取り消せません。')) {
+        localStorage.removeItem(SAVE_KEY);
+        // ルームIDは残すかどうか？要望には「キャラクターリセット」とあるので、キャラデータのみを消す。
+        // SAVE_KEY以外（roomIdなど）は敢えて消さないでおく。
+        console.log('[データ管理] リセット実行。ページをリロードします。');
+        location.reload();
+      }
+    }
+
+    // イベントリスナーの登録
+    document.getElementById('btn-export').addEventListener('click', exportCharacterJSON);
+    document.getElementById('btn-import-trigger').addEventListener('click', () => {
+      document.getElementById('input-import-json').click();
+    });
+    document.getElementById('input-import-json').addEventListener('change', handleJSONImport);
+    document.getElementById('btn-reset-char').addEventListener('click', resetCharacter);
   </script>
 </body>
 
