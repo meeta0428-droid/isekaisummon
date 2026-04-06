@@ -1786,6 +1786,17 @@
       box-shadow: 0 0 12px rgba(0, 229, 255, 0.2);
     }
 
+    .btn-copy {
+      background: rgba(0, 230, 118, 0.1);
+      border-color: rgba(0, 230, 118, 0.3);
+      color: var(--success-green);
+    }
+
+    .btn-copy:hover {
+      background: rgba(0, 230, 118, 0.2);
+      box-shadow: 0 0 12px rgba(0, 230, 118, 0.2);
+    }
+
     .btn-import {
       background: rgba(179, 136, 255, 0.1);
       border-color: rgba(179, 136, 255, 0.3);
@@ -2081,6 +2092,7 @@
       <div class="card-title">⚙️ データ管理</div>
       <div class="data-mgmt-row">
         <button class="btn-data btn-export" id="btn-export">💾 JSON保存</button>
+        <button class="btn-data btn-copy" id="btn-copy-text">📋 テキストコピー</button>
         <button class="btn-data btn-import" id="btn-import-trigger">📂 JSON読込</button>
         <button class="btn-data btn-reset" id="btn-reset-char">🗑️ リセット</button>
       </div>
@@ -4263,6 +4275,59 @@
       console.log('[データ管理] エクスポート完了');
     }
 
+    // テキストコピー: 現在のデータをテキストとしてクリップボードにコピー
+    function copyCharacterText() {
+      const data = buildSaveData();
+      const points = calculateCreationPoints();
+      
+      let text = `【キャラクター名】 ${data.charName || '未設定'}\n`;
+      text += `【転移・転生前の人生】\n${data.charPastLife || '未設定'}\n\n`;
+      text += `【転移・転生後の目標】\n${data.charGoal || '未設定'}\n\n`;
+
+      text += `【作成ポイント残り】 ${points.cp}\n`;
+      text += `【チートポイント残り】 ${points.chp}\n\n`;
+
+      text += `【能力値】\n`;
+      text += `体力: ${data.stats.hp}\n`;
+      text += `敏捷力: ${data.stats.agi}\n`;
+      text += `知力: ${data.stats.int}\n`;
+      text += `魅力: ${data.stats.cha}\n\n`;
+
+      text += `【HP】 ${data.hpCurrent} / ${data.hpMax}\n`;
+      text += `【SP】 ${data.sp} / ${data.spMax}\n\n`;
+
+      text += `【コモンパーツ】\n`;
+      let hasParts = false;
+      data.commonParts.forEach((partIdx, i) => {
+        const part = COMMON_PARTS[partIdx];
+        if (part && part.name !== '未設定' && part.name !== 'ー' && part.name !== '未装備') {
+          hasParts = true;
+          const activeStr = data.commonPartsActive[i] ? '[ON]' : '[OFF]';
+          text += `- ${activeStr} ${part.name} (CP:${part.cost}) 効果: ${part.effect}\n`;
+        }
+      });
+      if (!hasParts) text += `- なし\n`;
+      text += `\n`;
+
+      text += `【チートスキル】\n`;
+      let hasCheats = false;
+      data.cheatSlots.forEach(slot => {
+        if (slot.name || (slot.baseRank && slot.baseRank !== 'none')) {
+          hasCheats = true;
+          const rankStr = (slot.rank && slot.rank !== 'none') ? `[${slot.rank}]` : '';
+          const effectBonus = RANK_BONUS[slot.rank] || 0;
+          text += `- ${rankStr} ${slot.name || '名称未設定'} (効果: 成功ダイス +${effectBonus})\n`;
+        }
+      });
+      if (!hasCheats) text += `- なし\n`;
+
+      navigator.clipboard.writeText(text).then(() => {
+        alert('キャラクターデータをクリップボードにコピーしました！');
+      }).catch(err => {
+        alert('コピーに失敗しました: ' + err);
+      });
+    }
+
     // インポート: JSONファイルを読み込んでlocalStorageに保存し、リロード
     function handleJSONImport(event) {
       const file = event.target.files[0];
@@ -4306,6 +4371,7 @@
 
     // イベントリスナーの登録
     document.getElementById('btn-export').addEventListener('click', exportCharacterJSON);
+    document.getElementById('btn-copy-text').addEventListener('click', copyCharacterText);
     document.getElementById('btn-import-trigger').addEventListener('click', () => {
       document.getElementById('input-import-json').click();
     });
