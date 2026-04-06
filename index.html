@@ -1400,6 +1400,11 @@
         padding: 10px 12px;
       }
 
+      .char-textarea {
+        font-size: 0.9rem;
+        padding: 10px 12px;
+      }
+
       .hp-current {
         font-size: 1.4rem;
       }
@@ -1417,6 +1422,26 @@
     }
 
     /* === チャット・履歴エリア === */
+    .char-textarea {
+      width: 100%;
+      background: var(--bg-glass);
+      border: 1px solid var(--border-glow);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 0.95rem;
+      color: var(--text-primary);
+      font-family: 'Noto Sans JP', sans-serif;
+      outline: none;
+      transition: all 0.3s;
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    .char-textarea:focus {
+      border-color: var(--accent-cyan);
+      box-shadow: 0 0 12px rgba(0, 229, 255, 0.2);
+    }
+
     .chat-input-area {
       display: flex;
       gap: 8px;
@@ -1831,6 +1856,14 @@
         <label class="char-name-label">キャラクター名</label>
         <input type="text" class="char-name-input" id="char-name" placeholder="キャラクター名を入力">
       </div>
+      <div class="char-name-group">
+        <label class="char-name-label">転移・転生前の人生</label>
+        <textarea class="char-textarea" id="char-past-life" placeholder="転移・転生前の職業や境遇などを入力"></textarea>
+      </div>
+      <div class="char-name-group">
+        <label class="char-name-label">転移・転生後の目標</label>
+        <textarea class="char-textarea" id="char-goal" placeholder="この世界での目標や目的を入力"></textarea>
+      </div>
       <div class="stat-list">
         <div class="stat-row" data-stat="hp">
           <div class="stat-icon hp">💪</div>
@@ -2164,6 +2197,8 @@
 
       return {
         charName: document.getElementById('char-name').value,
+        charPastLife: document.getElementById('char-past-life').value,
+        charGoal: document.getElementById('char-goal').value,
         stats: {
           hp: parseInt(document.getElementById('stat-hp').dataset.val) || 3,
           agi: parseInt(document.getElementById('stat-agi').dataset.val) || 3,
@@ -2187,7 +2222,7 @@
 
     // セーブ関数（ローカルのみ）
     function saveToStorage() {
-      if (isSyncingFromFirebase) return; // Firebase同期中は保存しない（レガシー処理として残す）
+      if (isSyncingFromFirebase || isResettingOrImporting) return; // Firebase同期中は保存しない（レガシー処理として残す）
       const data = buildSaveData();
       localStorage.setItem(SAVE_KEY, JSON.stringify(data));
       // Firebaseへの全体ステータス保存は行わず、個人のローカル保存のみとする
@@ -3583,6 +3618,12 @@
         if (saved.charName) {
           document.getElementById('char-name').value = saved.charName;
         }
+        if (saved.charPastLife !== undefined) {
+          document.getElementById('char-past-life').value = saved.charPastLife;
+        }
+        if (saved.charGoal !== undefined) {
+          document.getElementById('char-goal').value = saved.charGoal;
+        }
         // 能力値
         if (saved.stats) {
           ['hp', 'agi', 'int', 'cha'].forEach(key => {
@@ -3902,8 +3943,12 @@
     }
 
     // === 自動保存：各種変更時にlocalStorageへ保存 ===
+    let isResettingOrImporting = false; // インポート/リセット時の誤保存防止フラグ
+
     // キャラクター名
     document.getElementById('char-name').addEventListener('input', saveToStorage);
+    document.getElementById('char-past-life').addEventListener('input', saveToStorage);
+    document.getElementById('char-goal').addEventListener('input', saveToStorage);
     // 能力値の ＋/－ ボタン処理
     document.querySelectorAll('.stat-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
@@ -4233,6 +4278,7 @@
           }
 
           if (confirm('キャラクターデータを読み込みますか？現在のデータは上書きされます。')) {
+            isResettingOrImporting = true; // 読み込み中の不要なSaveToStorageを防止
             localStorage.setItem(SAVE_KEY, JSON.stringify(data));
             console.log('[データ管理] インポート成功。ページをリロードします。');
             location.reload();
@@ -4249,6 +4295,7 @@
     // リセット: localStorageを削除してリロード
     function resetCharacter() {
       if (confirm('全てのキャラクターデータをリセットしますか？この操作は取り消せません。')) {
+        isResettingOrImporting = true; // リセット中の不要なSaveToStorageを防止
         localStorage.removeItem(SAVE_KEY);
         // ルームIDは残すかどうか？要望には「キャラクターリセット」とあるので、キャラデータのみを消す。
         // SAVE_KEY以外（roomIdなど）は敢えて消さないでおく。
